@@ -1,0 +1,30 @@
+[package]
+name = "solidfunc"
+version = "0.1.0-alpha.1"
+edition = "2021"
+rust-version = "1.96"
+description = "An experimental functional Python API for SolidCore."
+license = "MIT"
+repository = "https://github.com/DavidMStraub/solidfunc"
+publish = false
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.30.1", features = ["abi3-py311"] }
+solidcore-ops = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
+solidcore-step = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+[profile.release]
+debug = 0
+strip = "debuginfo"

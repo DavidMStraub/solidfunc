@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - name: Install Rust toolchain
+        run: rustup show active-toolchain
+      - name: Install package and development tools
+        run: uv sync --locked --python ${{ matrix.python }} --config-setting build-args=--profile=dev
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync mypy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: uv run --no-sync pytest
+      - name: Check STEP exchange with CadQuery
+        if: matrix.python == '3.11'
+        run: uv run --no-sync --with 'cadquery>=2.8,<3' pytest tests/test_step_export.py
+      - run: uv run --no-sync python examples/hello_world.py
+
+  distributions:
+    uses: ./.github/workflows/build.yml

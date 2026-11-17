@@ -1,0 +1,87 @@
+name: Build distributions
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    name: Wheel / ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            runner: ubuntu-24.04
+            target: x86_64
+            manylinux: "2_28"
+          - platform: linux-aarch64
+            runner: ubuntu-24.04-arm
+            target: aarch64
+            manylinux: "2_28"
+          - platform: windows-x86_64
+            runner: windows-latest
+            target: x86_64
+            manylinux: auto
+          - platform: macos-aarch64
+            runner: macos-14
+            target: aarch64
+            manylinux: auto
+          - platform: macos-x86_64
+            runner: macos-15-intel
+            target: x86_64
+            manylinux: auto
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Build stable ABI wheel
+        uses: PyO3/maturin-action@v1.51.0
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --locked --out dist
+          rust-toolchain: "1.96.0"
+      - name: Install and test built wheel
+        shell: bash
+        run: |
+          python -m pip install --pre --only-binary=solidfunc --no-index --find-links dist solidfunc
+          python -m pip install pytest
+          python -m pytest
+          python examples/hello_world.py
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: wheels-${{ matrix.platform }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Build sdist and rebuild a wheel from it
+        run: uv build
+      - name: Check distribution metadata
+        run: uvx twine check dist/*
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Test wheel rebuilt from sdist
+        run: |
+          python -m pip install --pre --only-binary=solidfunc --no-index --find-links dist solidfunc
+          python -m pip install pytest
+          python -m pytest
+          python examples/hello_world.py
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
