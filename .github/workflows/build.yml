@@ -28,7 +28,7 @@ jobs:
             target: x86_64
             manylinux: auto
           - platform: macos-aarch64
-            runner: macos-14
+            runner: macos-15
             target: aarch64
             manylinux: auto
           - platform: macos-x86_64
