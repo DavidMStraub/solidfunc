@@ -29,16 +29,21 @@ is its lower corner. Currently implemented: `box`, `translate`, `volume`,
 `bounds`, and `export_step`. This initial example exercises SolidCore itself.
 
 The example writes a STEP AP242 file that can be opened in other CAD tools.
-With CadQuery and OCP CAD Viewer installed, view it using:
+After cloning the repository, run these commands from its root directory to
+generate and display the file. Install the **OCP CAD Viewer** extension in
+VS Code and start its viewer first:
 
-```python
-import cadquery as cq
-from ocp_vscode import show
-
-show(cq.importers.importStep("hello.step"))
+```sh
+uv sync --locked --inexact --config-setting build-args=--profile=dev
+uv pip install --python .venv/bin/python 'cadquery>=2.8,<3' 'ocp-vscode>=3,<4'
+source .venv/bin/activate
+python examples/hello_world.py
+python examples/view_hello.py
 ```
 
-CadQuery and the viewer are optional tools for inspecting exported geometry.
+CadQuery and the viewer are installed separately into `.venv` for these examples.
+They are not project dependencies. Include `--inexact` in subsequent `uv sync`
+commands to keep these manually installed tools.
 
 ## Development
 
@@ -60,8 +65,10 @@ cargo clippy --locked --all-targets -- -D warnings
 The project uses a mixed Python/Rust layout: the public typed API lives in
 `python/solidfunc`, and the private PyO3 extension in `src/lib.rs` calls
 `solidcore-ops` and `solidcore-step`. Maturin builds and installs the extension
-during `uv sync`; the development command above uses the faster debug profile.
-Python 3.11+ is supported using the CPython stable ABI (`abi3`).
+during `uv sync`; the development command above uses the faster debug profile
+and installs the package in editable mode in `.venv`. Python changes take effect
+immediately; after changing Rust code, rerun that `uv sync` command to rebuild
+the extension. Python 3.11+ is supported using the CPython stable ABI (`abi3`).
 
 SolidCore is pinned to commit `cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3`
 in `Cargo.toml`; `Cargo.lock` and `uv.lock` pin the resolved dependencies.
@@ -80,7 +87,7 @@ The CadQuery round-trip tests are skipped when that optional dependency is absen
 
 ```sh
 uv build
-uv run twine check dist/*
+uv run --no-sync twine check dist/*
 ```
 
 CI checks Python formatting, lint, typing, and geometry behavior, plus Rust
@@ -92,7 +99,9 @@ Publishing is a separate **Publish to PyPI** workflow triggered by a published
 GitHub release. It checks that the tag matches the package version, builds and
 tests the distributions, and publishes with OIDC trusted publishing.
 
-Before the first release, register a pending trusted publisher on PyPI:
+Before the first release, log in to PyPI with two-factor authentication enabled
+and register a pending GitHub publisher in your
+[publishing settings](https://pypi.org/manage/account/publishing/):
 
 | Setting | Value |
 | --- | --- |
@@ -103,8 +112,12 @@ Before the first release, register a pending trusted publisher on PyPI:
 | Environment | `pypi` |
 
 The initial Cargo version `0.1.0-alpha.1` maps to Python version `0.1.0a1`.
-Publish a GitHub release tagged `v0.1.0a1` to release it. No PyPI API token is
-needed. Creating the repository or pushing a commit does not publish a package.
+Publish a GitHub release tagged `v0.1.0a1` and mark it as a pre-release to
+release it. No PyPI API token is needed. A pending publisher does not reserve
+the project name: the first successful upload creates the project and claims
+the name, as described in the
+[PyPI documentation](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/).
+Creating the repository or pushing a commit does not publish a package.
 
 ## License
 

@@ -71,3 +71,8 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.11"
 strict = true
 files = ["python/solidfunc", "examples"]
+
+[[tool.mypy.overrides]]
+module = ["cadquery", "ocp_vscode"]
+ignore_missing_imports = true
+follow_imports = "skip"
