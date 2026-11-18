@@ -17,6 +17,17 @@ struct Solid {
     body: Body,
 }
 
+#[pymethods]
+impl Solid {
+    fn __add__(&self, py: Python<'_>, other: &Solid) -> PyResult<Solid> {
+        _union(py, self, other)
+    }
+
+    fn __sub__(&self, py: Python<'_>, other: &Solid) -> PyResult<Option<Solid>> {
+        _difference(py, self, other)
+    }
+}
+
 fn kernel_error(operation: &str, error: Error) -> PyErr {
     let message = format!("{operation}: {error}");
     match error {

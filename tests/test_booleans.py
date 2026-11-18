@@ -1,6 +1,7 @@
 """Analytical boolean results, empty sets, and operand preservation."""
 
 from collections.abc import Callable
+from operator import add, sub
 
 import pytest
 import solidfunc as sf
@@ -14,6 +15,8 @@ Boolean = Callable[[sf.Solid, sf.Solid], sf.Solid | None]
         (sf.union, 36, (0, 0, 0), (6, 3, 2)),
         (sf.intersection, 12, (2, 0, 0), (4, 3, 2)),
         (sf.difference, 12, (0, 0, 0), (2, 3, 2)),
+        (add, 36, (0, 0, 0), (6, 3, 2)),
+        (sub, 12, (0, 0, 0), (2, 3, 2)),
     ],
 )
 def test_overlapping_boxes(
@@ -41,12 +44,14 @@ def test_overlapping_boxes(
     assert sf.volume(right_alias) == pytest.approx(24)
 
 
-@pytest.mark.parametrize("operation", [sf.union, sf.intersection, sf.difference])
+@pytest.mark.parametrize(
+    "operation", [sf.union, sf.intersection, sf.difference, add, sub]
+)
 def test_same_operand(operation: Boolean) -> None:
     block = sf.box(length=4, width=3, height=2)
     result = operation(block, block)
 
-    if operation is sf.difference:
+    if operation in (sf.difference, sub):
         assert result is None
     else:
         assert result is not None and result is not block
@@ -54,6 +59,40 @@ def test_same_operand(operation: Boolean) -> None:
         assert sf.bounds(result) == ((0, 0, 0), (4, 3, 2))
     assert sf.volume(block) == pytest.approx(24)
     assert sf.bounds(block) == ((0, 0, 0), (4, 3, 2))
+
+
+def test_chained_operators() -> None:
+    block = sf.box(length=4, width=3, height=2)
+    shifted = sf.translate(block, x=2)
+    result = (block + shifted) - shifted
+
+    assert result is not None
+    assert sf.volume(result) == pytest.approx(12)
+    assert sf.bounds(result) == ((0, 0, 0), (2, 3, 2))
+    assert sf.volume(block) == pytest.approx(24)
+    assert sf.volume(shifted) == pytest.approx(24)
+
+
+@pytest.mark.parametrize("operation", [add, sub])
+def test_operators_reject_unsupported_operands(
+    operation: Callable[..., object],
+) -> None:
+    block = sf.box(length=4, width=3, height=2)
+    with pytest.raises(TypeError, match="unsupported operand"):
+        operation(block, object())
+    with pytest.raises(TypeError, match="unsupported operand"):
+        operation(object(), block)
+    assert sf.volume(block) == pytest.approx(24)
+
+
+def test_augmented_addition_preserves_alias() -> None:
+    block = sf.box(length=4, width=3, height=2)
+    alias = block
+    block += sf.translate(block, x=2)
+
+    assert block is not alias
+    assert sf.volume(block) == pytest.approx(36)
+    assert sf.volume(alias) == pytest.approx(24)
 
 
 def test_disjoint_operands() -> None:
