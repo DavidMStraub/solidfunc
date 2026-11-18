@@ -74,6 +74,25 @@ Kernel failures raise `sf.KernelError`, a subclass of `RuntimeError`.
 Invalid dimensions raise `ValueError`; filesystem failures raise standard
 `OSError` subclasses.
 
+## Bearing pillow block
+
+[examples/bearing_pillow_block.py](examples/bearing_pillow_block.py) reproduces
+CadQuery's [parametric bearing pillow block](https://cadquery.readthedocs.io/en/latest/examples.html#a-parametric-bearing-pillow-block)
+using a box, cylindrical cutters, and the `+` and `-` operators. The default
+plate is 30 × 40 × 10 mm, with a 22 mm bearing hole and four counterbored
+mounting holes. The modelling function takes dimensions as keyword arguments.
+
+With the development environment activated, run:
+
+```sh
+python examples/bearing_pillow_block.py
+python examples/view_pillow_block.py
+```
+
+The first script writes `pillow_block.step` in the repository root. The second
+imports it with CadQuery and displays it in the running OCP CAD Viewer, using
+the same optional viewing tools as the hello-world example.
+
 ## Development
 
 Install [uv](https://docs.astral.sh/uv/) and [Rust](https://rustup.rs/), then:
