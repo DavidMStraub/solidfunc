@@ -40,6 +40,3 @@ jobs:
         if: matrix.python == '3.11'
         run: uv run --no-sync --with 'cadquery>=2.8,<3' pytest tests/test_step_export.py
       - run: uv run --no-sync python examples/hello_world.py
-
-  distributions:
-    uses: ./.github/workflows/build.yml

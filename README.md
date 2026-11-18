@@ -90,10 +90,13 @@ uv build
 uv run --no-sync twine check dist/*
 ```
 
-CI checks Python formatting, lint, typing, and geometry behavior, plus Rust
-formatting and clippy. The reusable wheel workflow builds and tests native
-wheels for Linux, Windows, and macOS, and builds a source distribution.
-The **Build distributions** workflow can also be run manually.
+On pushes to `main` and pull requests, CI checks Python formatting, lint,
+typing, geometry behavior, and CadQuery STEP exchange, plus Rust formatting
+and clippy. It tests Python 3.11 and 3.14 on Linux.
+
+The full distribution builds run for releases or when **Build distributions**
+is triggered manually. They build and test native wheels for Linux, Windows,
+and macOS, and verify a wheel rebuilt from the source distribution.
 
 Publishing is a separate **Publish to PyPI** workflow triggered by a published
 GitHub release. It checks that the tag matches the package version, builds and
