@@ -1,9 +1,58 @@
 """Check exchange with an independent kernel when CadQuery is available."""
 
+import math
 from pathlib import Path
 
 import pytest
 import solidfunc as sf
+
+
+@pytest.mark.parametrize(
+    "operation",
+    ["cylinder", "union", "intersection", "difference", "disjoint_union", "split"],
+)
+def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) -> None:
+    cq = pytest.importorskip("cadquery")
+    cylinder = sf.cylinder(radius=2, height=12, origin=(5, 5, -1))
+    block = sf.box(length=10, width=10, height=10)
+    solid_count = 1
+    if operation == "cylinder":
+        result = cylinder
+        expected_volume = math.pi * 4 * 12
+    elif operation == "union":
+        result = sf.union(block, cylinder)
+        expected_volume = 1000 + math.pi * 4 * 2
+    elif operation == "intersection":
+        result = sf.intersection(block, cylinder)
+        expected_volume = math.pi * 4 * 10
+    elif operation == "difference":
+        result = sf.difference(block, cylinder)
+        expected_volume = 1000 - math.pi * 4 * 10
+    elif operation == "disjoint_union":
+        result = sf.union(block, sf.translate(block, x=20))
+        expected_volume = 2000
+        solid_count = 2
+    else:
+        cutter = sf.box(length=2, width=12, height=12, origin=(4, -1, -1))
+        result = sf.difference(block, cutter)
+        expected_volume = 800
+        solid_count = 2
+    assert result is not None
+    path = tmp_path / f"{operation}.step"
+
+    sf.export_step(result, path, name=operation)
+    imported = cq.importers.importStep(str(path)).val()
+
+    assert imported.isValid()
+    assert len(imported.Solids()) == solid_count
+    assert sf.volume(result) == pytest.approx(expected_volume, rel=1e-9)
+    assert imported.Volume() == pytest.approx(expected_volume, rel=1e-9)
+    lower, upper = sf.bounds(result)
+    bounds = imported.BoundingBox()
+    assert (bounds.xmin, bounds.ymin, bounds.zmin) == pytest.approx(lower, abs=1e-6)
+    assert (bounds.xmax, bounds.ymax, bounds.zmax) == pytest.approx(upper, abs=1e-6)
+    assert sf.volume(block) == pytest.approx(1000)
+    assert sf.volume(cylinder) == pytest.approx(math.pi * 4 * 12)
 
 
 @pytest.mark.parametrize("as_string", [False, True])

@@ -6,7 +6,19 @@ opaque and operations leave their inputs unchanged.
 
 from importlib.metadata import version
 
-from ._api import Bounds, Point3D, bounds, box, export_step, translate, volume
+from ._api import (
+    Bounds,
+    Point3D,
+    bounds,
+    box,
+    cylinder,
+    difference,
+    export_step,
+    intersection,
+    translate,
+    union,
+    volume,
+)
 from ._core import Solid, SolidCoreError
 
 __version__ = version("solidfunc")
@@ -19,7 +31,11 @@ __all__ = [
     "__version__",
     "bounds",
     "box",
+    "cylinder",
+    "difference",
     "export_step",
+    "intersection",
     "translate",
+    "union",
     "volume",
 ]

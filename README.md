@@ -25,8 +25,9 @@ sf.export_step(block, "hello.step")
 
 Geometry is opaque. Functions return new geometry and preserve their inputs.
 Lengths are millimetres, volumes are cubic millimetres, and a box's `origin`
-is its lower corner. Currently implemented: `box`, `translate`, `volume`,
-`bounds`, and `export_step`. This initial example exercises SolidCore itself.
+is its lower corner. Currently implemented: `box`, `cylinder`, `union`,
+`intersection`, `difference`, `translate`, `volume`, `bounds`, and `export_step`.
+These operations use SolidCore itself.
 
 The example writes a STEP AP242 file that can be opened in other CAD tools.
 After cloning the repository, run these commands from its root directory to
@@ -44,6 +45,28 @@ python examples/view_hello.py
 CadQuery and the viewer are installed separately into `.venv` for these examples.
 They are not project dependencies. Include `--inexact` in subsequent `uv sync`
 commands to keep these manually installed tools.
+
+## Cylinders and booleans
+
+A cylinder extends along +Z from `origin`, the centre of its base circle.
+Its `radius` and `height` must be positive and finite, in millimetres.
+Boolean operations take two positional operands and preserve both inputs:
+
+```python
+block = sf.box(length=10, width=10, height=10)
+tool = sf.cylinder(radius=2, height=12, origin=(5, 5, -1))
+
+drilled = sf.difference(block, tool)  # material in block but not tool
+combined = sf.union(block, tool)  # material in either
+shared = sf.intersection(block, tool)  # material in both
+
+if drilled is not None:
+    sf.export_step(drilled, "drilled.step")
+```
+
+An empty `intersection` or `difference` returns `None`. Results with multiple
+disconnected regions stay in a single `Solid` value; STEP export preserves
+all of them. `union` always returns a `Solid`.
 
 ## Development
 

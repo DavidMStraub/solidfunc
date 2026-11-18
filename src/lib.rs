@@ -6,7 +6,7 @@
 use pyo3::create_exception;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
-use solidcore_ops::{affine, Body, Error};
+use solidcore_ops::{affine, Body, BooleanOp, Error};
 use solidcore_step::write::product::{solidcore_bodies, Header};
 
 create_exception!(_core, SolidCoreError, PyRuntimeError);
@@ -30,6 +30,46 @@ fn _box(py: Python<'_>, origin: [f64; 3], size: [f64; 3]) -> PyResult<Solid> {
     py.detach(|| solidcore_ops::make_box(origin, size))
         .map(|body| Solid { body })
         .map_err(|error| kernel_error("box", error))
+}
+
+#[pyfunction]
+fn _cylinder(py: Python<'_>, origin: [f64; 3], radius: f64, height: f64) -> PyResult<Solid> {
+    py.detach(|| solidcore_ops::make_cylinder(origin, radius, height))
+        .map(|body| Solid { body })
+        .map_err(|error| kernel_error("cylinder", error))
+}
+
+fn boolean_result(
+    py: Python<'_>,
+    left: &Solid,
+    right: &Solid,
+    operation: BooleanOp,
+    name: &str,
+) -> PyResult<Option<Solid>> {
+    py.detach(|| {
+        // The kernel consumes both operands, including on failure. Copy even when they alias.
+        let left = left.body.copy()?;
+        let right = right.body.copy()?;
+        solidcore_ops::boolean::boolean(left, right, operation)
+    })
+    .map(|result| result.map(|body| Solid { body }))
+    .map_err(|error| kernel_error(name, error))
+}
+
+#[pyfunction]
+fn _union(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Solid> {
+    boolean_result(py, left, right, BooleanOp::Union, "union")?
+        .ok_or_else(|| kernel_error("union", Error::Empty))
+}
+
+#[pyfunction]
+fn _intersection(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Option<Solid>> {
+    boolean_result(py, left, right, BooleanOp::Intersect, "intersection")
+}
+
+#[pyfunction]
+fn _difference(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Option<Solid>> {
+    boolean_result(py, left, right, BooleanOp::Subtract, "difference")
 }
 
 #[pyfunction]
@@ -74,6 +114,10 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<Solid>()?;
     module.add("SolidCoreError", module.py().get_type::<SolidCoreError>())?;
     module.add_function(wrap_pyfunction!(_box, module)?)?;
+    module.add_function(wrap_pyfunction!(_cylinder, module)?)?;
+    module.add_function(wrap_pyfunction!(_union, module)?)?;
+    module.add_function(wrap_pyfunction!(_intersection, module)?)?;
+    module.add_function(wrap_pyfunction!(_difference, module)?)?;
     module.add_function(wrap_pyfunction!(_volume, module)?)?;
     module.add_function(wrap_pyfunction!(_translate, module)?)?;
     module.add_function(wrap_pyfunction!(_bounds, module)?)?;

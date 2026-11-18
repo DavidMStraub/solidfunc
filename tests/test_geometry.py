@@ -12,6 +12,34 @@ def test_box_geometry() -> None:
     assert sf.bounds(block) == ((1, 2, 3), (11, 22, 33))
 
 
+def test_cylinder_geometry_and_translation() -> None:
+    cylinder = sf.cylinder(radius=2.5, height=7, origin=(1, -2, 3))
+    moved = sf.translate(cylinder, x=10, y=-5, z=2)
+
+    assert sf.volume(cylinder) == pytest.approx(math.pi * 2.5**2 * 7)
+    lower, upper = sf.bounds(cylinder)
+    assert lower == pytest.approx((-1.5, -4.5, 3))
+    assert upper == pytest.approx((3.5, 0.5, 10))
+    moved_lower, moved_upper = sf.bounds(moved)
+    assert moved_lower == pytest.approx((8.5, -9.5, 5))
+    assert moved_upper == pytest.approx((13.5, -4.5, 12))
+    assert sf.volume(moved) == pytest.approx(sf.volume(cylinder))
+
+
+@pytest.mark.parametrize("dimension", ["radius", "height"])
+@pytest.mark.parametrize("value", [0, -1, math.nan, math.inf, -math.inf])
+def test_invalid_cylinder_dimensions(dimension: str, value: float) -> None:
+    dimensions = {"radius": 2.0, "height": 3.0}
+    dimensions[dimension] = value
+    with pytest.raises(ValueError, match=dimension):
+        sf.cylinder(**dimensions)
+
+
+def test_invalid_cylinder_origin() -> None:
+    with pytest.raises(ValueError, match="cylinder"):
+        sf.cylinder(radius=2, height=3, origin=(math.inf, 0, 0))
+
+
 def test_translation_preserves_input_and_aliases() -> None:
     block = sf.box(length=10, width=20, height=30)
     alias = block

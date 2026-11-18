@@ -34,6 +34,41 @@ def box(
     return _core._box(origin, (length, width, height))
 
 
+def cylinder(
+    *, radius: float, height: float, origin: Point3D = (0.0, 0.0, 0.0)
+) -> Solid:
+    """Construct a cylinder along +Z from its base centre, in millimetres.
+
+    ``radius`` and ``height`` must be positive and finite. ``origin`` is the
+    centre of the lower circular face.
+    """
+    _positive("radius", radius)
+    _positive("height", height)
+    return _core._cylinder(origin, radius, height)
+
+
+def union(left: Solid, right: Solid, /) -> Solid:
+    """Return the material in either operand, preserving both inputs.
+
+    Disconnected regions are kept together in one opaque geometry value.
+    """
+    return _core._union(left, right)
+
+
+def intersection(left: Solid, right: Solid, /) -> Solid | None:
+    """Return the shared volume, or ``None`` if empty, preserving both inputs."""
+    return _core._intersection(left, right)
+
+
+def difference(left: Solid, right: Solid, /) -> Solid | None:
+    """Subtract ``right`` from ``left``, preserving both inputs.
+
+    Return ``None`` when no material remains. Disconnected remaining regions
+    are kept together in one opaque geometry value.
+    """
+    return _core._difference(left, right)
+
+
 def volume(solid: Solid, *, relative_accuracy: float = 1e-9) -> float:
     """Measure enclosed volume in mm³ at the requested relative accuracy."""
     _positive("relative_accuracy", relative_accuracy)
