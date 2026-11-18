@@ -104,8 +104,9 @@ pinned Rust toolchain and Python version, builds solidfunc in editable mode,
 and installs the development and viewing tools. It also generates `hello.step`
 and `pillow_block.step`. The first native build takes a few minutes.
 
-Python, Ruff, Rust Analyzer, and OCP CAD Viewer extensions are configured for
-the container. Open **OCP CAD Viewer: Open viewer**, then run:
+Python, Ruff, Rust Analyzer, OCP CAD Viewer, Codex, and Claude Code extensions
+are configured for the container, and GitHub CLI (`gh`) is installed.
+Open **OCP CAD Viewer: Open viewer**, then run:
 
 ```sh
 python examples/view_pillow_block.py
@@ -124,6 +125,30 @@ uv sync --locked --inexact --config-setting build-args=--profile=dev
 Maturin writes the native extension into the source tree. When switching
 between host and container development, rebuild it for that environment with
 `uv sync --locked --inexact --reinstall-package solidfunc --config-setting build-args=--profile=dev`.
+
+#### Coding assistants and persistent state
+
+Open the Codex and Claude Code panels in the container window and sign in on
+first use. For GitHub CLI, run `gh auth login` in the container terminal.
+Saved assistant memory, conversations, and settings are kept in Docker volumes
+scoped to this checkout, along with GitHub CLI configuration and VS Code's
+remote data:
+
+| Directory | Persistent state |
+| --- | --- |
+| `/home/vscode/.codex` | Codex configuration, saved sessions, and memory |
+| `/home/vscode/.claude` | Claude Code configuration, saved sessions, and auto memory |
+| `/home/vscode/.config/gh` | GitHub CLI configuration and file-based authentication |
+| `/home/vscode/.vscode-server/data` | VS Code remote settings and extension UI state |
+
+`CLAUDE_CONFIG_DIR` points to the mounted Claude directory so its global
+`.claude.json` file is also retained. See the official
+[Codex state locations](https://learn.chatgpt.com/docs/config-file/config-advanced#config-and-state-locations)
+and [Claude Code dev container guidance](https://code.claude.com/docs/en/devcontainer#persist-authentication-and-settings-across-rebuilds).
+The fixed workspace path keeps project-specific memory associated with the
+same project after a rebuild. Rebuilds retain these volumes; deleting the
+volumes removes their state. Project instruction files such as `AGENTS.md`
+and `CLAUDE.md` remain in the mounted repository.
 
 ### Local setup
 

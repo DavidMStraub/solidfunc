@@ -4,12 +4,22 @@
         "dockerfile": "Dockerfile",
         "context": ".."
     },
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/solidfunc,type=bind",
     "workspaceFolder": "/workspaces/solidfunc",
     "remoteUser": "vscode",
     "init": true,
+    "containerEnv": {
+        "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+    },
     "mounts": [
-        "source=solidfunc-cache-${devcontainerId},target=/home/vscode/.cache,type=volume"
+        "source=solidfunc-cache-${devcontainerId},target=/home/vscode/.cache,type=volume",
+        "source=solidfunc-codex-${devcontainerId},target=/home/vscode/.codex,type=volume",
+        "source=solidfunc-claude-${devcontainerId},target=/home/vscode/.claude,type=volume",
+        "source=solidfunc-gh-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
+        "source=solidfunc-vscode-data-${devcontainerId},target=/home/vscode/.vscode-server/data,type=volume"
     ],
     "postCreateCommand": "bash .devcontainer/post-create.sh",
     "customizations": {
@@ -20,7 +30,9 @@
                 "charliermarsh.ruff",
                 "rust-lang.rust-analyzer",
                 "tamasfe.even-better-toml",
-                "bernhard-42.ocp-cad-viewer@4.2.0"
+                "bernhard-42.ocp-cad-viewer@4.2.0",
+                "openai.chatgpt",
+                "anthropic.claude-code"
             ],
             "settings": {
                 "python.defaultInterpreterPath": "/home/vscode/.venvs/solidfunc/bin/python",

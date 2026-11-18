@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Docker cache volumes need to be writable by the development user.
-sudo chown "$(id -u):$(id -g)" /home/vscode/.cache
+# Docker cache and state volumes need to be writable by the development user.
+sudo chown "$(id -u):$(id -g)" \
+    /home/vscode/.cache \
+    /home/vscode/.codex \
+    /home/vscode/.claude \
+    /home/vscode/.config/gh \
+    /home/vscode/.vscode-server/data
 
 uv sync --locked --inexact --config-setting build-args=--profile=dev
 uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" \

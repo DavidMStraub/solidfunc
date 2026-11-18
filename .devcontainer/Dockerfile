@@ -23,6 +23,10 @@ COPY --chown=vscode:vscode .python-version rust-toolchain.toml /tmp/solidfunc-to
 
 USER vscode
 
+# Give new state volumes the development user's ownership before VS Code starts.
+RUN mkdir -p /home/vscode/.codex /home/vscode/.claude \
+    /home/vscode/.config/gh /home/vscode/.vscode-server/data
+
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
     | sh -s -- -y --default-toolchain none --profile minimal
 
