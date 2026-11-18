@@ -2,7 +2,7 @@
 
 from typing import final
 
-class SolidCoreError(RuntimeError): ...
+class KernelError(RuntimeError): ...
 
 @final
 class Shape:

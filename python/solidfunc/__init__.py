@@ -19,15 +19,15 @@ from ._api import (
     union,
     volume,
 )
-from ._core import Shape, SolidCoreError
+from ._core import KernelError, Shape
 
 __version__ = version("solidfunc")
 
 __all__ = [
     "Bounds",
+    "KernelError",
     "Point3D",
     "Shape",
-    "SolidCoreError",
     "__version__",
     "bounds",
     "box",

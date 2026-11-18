@@ -70,6 +70,10 @@ disconnected regions stay in a single `Shape` value; STEP export preserves
 all of them. `union` always returns a `Shape`.
 The `+` and `-` operators have the same behavior and preserve their operands.
 
+Kernel failures raise `sf.KernelError`, a subclass of `RuntimeError`.
+Invalid dimensions raise `ValueError`; filesystem failures raise standard
+`OSError` subclasses.
+
 ## Development
 
 Install [uv](https://docs.astral.sh/uv/) and [Rust](https://rustup.rs/), then:

@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use solidcore_ops::{affine, Body, BooleanOp, Error};
 use solidcore_step::write::product::{solidcore_bodies, Header};
 
-create_exception!(_core, SolidCoreError, PyRuntimeError);
+create_exception!(_core, KernelError, PyRuntimeError);
 
 /// An opaque shape created by solidfunc's construction functions.
 #[pyclass(frozen, module = "solidfunc")]
@@ -32,7 +32,7 @@ fn kernel_error(operation: &str, error: Error) -> PyErr {
     let message = format!("{operation}: {error}");
     match error {
         Error::Argument => PyValueError::new_err(message),
-        _ => SolidCoreError::new_err(message),
+        _ => KernelError::new_err(message),
     }
 }
 
@@ -117,13 +117,13 @@ fn _step_text(py: Python<'_>, shape: &Shape, file_name: &str, name: &str) -> PyR
         };
         solidcore_bodies(&[(name, &shape.body)], &header)
     })
-    .map_err(|error| SolidCoreError::new_err(format!("export_step: {error}")))
+    .map_err(|error| KernelError::new_err(format!("export_step: {error}")))
 }
 
 #[pymodule]
 fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<Shape>()?;
-    module.add("SolidCoreError", module.py().get_type::<SolidCoreError>())?;
+    module.add("KernelError", module.py().get_type::<KernelError>())?;
     module.add_function(wrap_pyfunction!(_box, module)?)?;
     module.add_function(wrap_pyfunction!(_cylinder, module)?)?;
     module.add_function(wrap_pyfunction!(_union, module)?)?;
