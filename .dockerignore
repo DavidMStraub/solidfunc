@@ -1,0 +1,12 @@
+.git
+.venv
+target
+dist
+__pycache__
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.step
+**/*.so
+**/*.pyd

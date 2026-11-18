@@ -1,0 +1,36 @@
+{
+    "name": "solidfunc",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/solidfunc,type=bind",
+    "workspaceFolder": "/workspaces/solidfunc",
+    "remoteUser": "vscode",
+    "init": true,
+    "mounts": [
+        "source=solidfunc-cache-${devcontainerId},target=/home/vscode/.cache,type=volume"
+    ],
+    "postCreateCommand": "bash .devcontainer/post-create.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "rust-lang.rust-analyzer",
+                "tamasfe.even-better-toml",
+                "bernhard-42.ocp-cad-viewer@4.2.0"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/home/vscode/.venvs/solidfunc/bin/python",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestArgs": ["tests"],
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
+            }
+        }
+    }
+}

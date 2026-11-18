@@ -37,7 +37,7 @@ VS Code and start its viewer first:
 
 ```sh
 uv sync --locked --inexact --config-setting build-args=--profile=dev
-uv pip install --python .venv/bin/python 'cadquery>=2.8,<3' 'ocp-vscode>=3,<4'
+uv pip install --python .venv/bin/python 'cadquery>=2.8,<3' 'ocp-vscode>=4.2,<4.3'
 source .venv/bin/activate
 python examples/hello_world.py
 python examples/view_hello.py
@@ -46,6 +46,7 @@ python examples/view_hello.py
 CadQuery and the viewer are installed separately into `.venv` for these examples.
 They are not project dependencies. Include `--inexact` in subsequent `uv sync`
 commands to keep these manually installed tools.
+Use the matching 4.2.x version of the OCP CAD Viewer extension.
 
 ## Cylinders and booleans
 
@@ -94,6 +95,37 @@ imports it with CadQuery and displays it in the running OCP CAD Viewer, using
 the same optional viewing tools as the hello-world example.
 
 ## Development
+
+### Dev container
+
+Install Docker and VS Code's **Dev Containers** extension, open this repository,
+then run **Dev Containers: Reopen in Container**. The first setup installs the
+pinned Rust toolchain and Python version, builds solidfunc in editable mode,
+and installs the development and viewing tools. It also generates `hello.step`
+and `pillow_block.step`. The first native build takes a few minutes.
+
+Python, Ruff, Rust Analyzer, and OCP CAD Viewer extensions are configured for
+the container. Open **OCP CAD Viewer: Open viewer**, then run:
+
+```sh
+python examples/view_pillow_block.py
+pytest
+```
+
+The container's virtual environment lives at `/home/vscode/.venvs/solidfunc`;
+`python` and the development tools are already on `PATH`. uv downloads and Rust
+build outputs are cached in a Docker volume. To rebuild after Rust changes
+while retaining the separately installed viewing tools, use:
+
+```sh
+uv sync --locked --inexact --config-setting build-args=--profile=dev
+```
+
+Maturin writes the native extension into the source tree. When switching
+between host and container development, rebuild it for that environment with
+`uv sync --locked --inexact --reinstall-package solidfunc --config-setting build-args=--profile=dev`.
+
+### Local setup
 
 Install [uv](https://docs.astral.sh/uv/) and [Rust](https://rustup.rs/), then:
 
