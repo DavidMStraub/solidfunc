@@ -11,19 +11,19 @@ use solidcore_step::write::product::{solidcore_bodies, Header};
 
 create_exception!(_core, SolidCoreError, PyRuntimeError);
 
-/// An opaque solid created by solidfunc's construction functions.
+/// An opaque shape created by solidfunc's construction functions.
 #[pyclass(frozen, module = "solidfunc")]
-struct Solid {
+struct Shape {
     body: Body,
 }
 
 #[pymethods]
-impl Solid {
-    fn __add__(&self, py: Python<'_>, other: &Solid) -> PyResult<Solid> {
+impl Shape {
+    fn __add__(&self, py: Python<'_>, other: &Shape) -> PyResult<Shape> {
         _union(py, self, other)
     }
 
-    fn __sub__(&self, py: Python<'_>, other: &Solid) -> PyResult<Option<Solid>> {
+    fn __sub__(&self, py: Python<'_>, other: &Shape) -> PyResult<Option<Shape>> {
         _difference(py, self, other)
     }
 }
@@ -37,77 +37,77 @@ fn kernel_error(operation: &str, error: Error) -> PyErr {
 }
 
 #[pyfunction]
-fn _box(py: Python<'_>, origin: [f64; 3], size: [f64; 3]) -> PyResult<Solid> {
+fn _box(py: Python<'_>, origin: [f64; 3], size: [f64; 3]) -> PyResult<Shape> {
     py.detach(|| solidcore_ops::make_box(origin, size))
-        .map(|body| Solid { body })
+        .map(|body| Shape { body })
         .map_err(|error| kernel_error("box", error))
 }
 
 #[pyfunction]
-fn _cylinder(py: Python<'_>, origin: [f64; 3], radius: f64, height: f64) -> PyResult<Solid> {
+fn _cylinder(py: Python<'_>, origin: [f64; 3], radius: f64, height: f64) -> PyResult<Shape> {
     py.detach(|| solidcore_ops::make_cylinder(origin, radius, height))
-        .map(|body| Solid { body })
+        .map(|body| Shape { body })
         .map_err(|error| kernel_error("cylinder", error))
 }
 
 fn boolean_result(
     py: Python<'_>,
-    left: &Solid,
-    right: &Solid,
+    left: &Shape,
+    right: &Shape,
     operation: BooleanOp,
     name: &str,
-) -> PyResult<Option<Solid>> {
+) -> PyResult<Option<Shape>> {
     py.detach(|| {
         // The kernel consumes both operands, including on failure. Copy even when they alias.
         let left = left.body.copy()?;
         let right = right.body.copy()?;
         solidcore_ops::boolean::boolean(left, right, operation)
     })
-    .map(|result| result.map(|body| Solid { body }))
+    .map(|result| result.map(|body| Shape { body }))
     .map_err(|error| kernel_error(name, error))
 }
 
 #[pyfunction]
-fn _union(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Solid> {
+fn _union(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Shape> {
     boolean_result(py, left, right, BooleanOp::Union, "union")?
         .ok_or_else(|| kernel_error("union", Error::Empty))
 }
 
 #[pyfunction]
-fn _intersection(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Option<Solid>> {
+fn _intersection(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Option<Shape>> {
     boolean_result(py, left, right, BooleanOp::Intersect, "intersection")
 }
 
 #[pyfunction]
-fn _difference(py: Python<'_>, left: &Solid, right: &Solid) -> PyResult<Option<Solid>> {
+fn _difference(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Option<Shape>> {
     boolean_result(py, left, right, BooleanOp::Subtract, "difference")
 }
 
 #[pyfunction]
-fn _volume(py: Python<'_>, solid: &Solid, relative_accuracy: f64) -> PyResult<f64> {
-    py.detach(|| solid.body.volume(relative_accuracy))
+fn _volume(py: Python<'_>, shape: &Shape, relative_accuracy: f64) -> PyResult<f64> {
+    py.detach(|| shape.body.volume(relative_accuracy))
         .map_err(|error| kernel_error("volume", error))
 }
 
 #[pyfunction]
-fn _translate(py: Python<'_>, solid: &Solid, offset: [f64; 3]) -> PyResult<Solid> {
+fn _translate(py: Python<'_>, shape: &Shape, offset: [f64; 3]) -> PyResult<Shape> {
     py.detach(|| {
         let matrix = affine::translation(offset)?;
-        let body = solid.body.copy()?;
+        let body = shape.body.copy()?;
         body.transform(&matrix)?;
-        Ok(Solid { body })
+        Ok(Shape { body })
     })
     .map_err(|error| kernel_error("translate", error))
 }
 
 #[pyfunction]
-fn _bounds(py: Python<'_>, solid: &Solid) -> PyResult<([f64; 3], [f64; 3])> {
-    py.detach(|| solid.body.bounds())
+fn _bounds(py: Python<'_>, shape: &Shape) -> PyResult<([f64; 3], [f64; 3])> {
+    py.detach(|| shape.body.bounds())
         .map_err(|error| kernel_error("bounds", error))
 }
 
 #[pyfunction]
-fn _step_text(py: Python<'_>, solid: &Solid, file_name: &str, name: &str) -> PyResult<String> {
+fn _step_text(py: Python<'_>, shape: &Shape, file_name: &str, name: &str) -> PyResult<String> {
     py.detach(|| {
         let header = Header {
             file_name: file_name.to_owned(),
@@ -115,14 +115,14 @@ fn _step_text(py: Python<'_>, solid: &Solid, file_name: &str, name: &str) -> PyR
             preprocessor_version: format!("solidfunc {}", env!("CARGO_PKG_VERSION")),
             ..Header::default()
         };
-        solidcore_bodies(&[(name, &solid.body)], &header)
+        solidcore_bodies(&[(name, &shape.body)], &header)
     })
     .map_err(|error| SolidCoreError::new_err(format!("export_step: {error}")))
 }
 
 #[pymodule]
 fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
-    module.add_class::<Solid>()?;
+    module.add_class::<Shape>()?;
     module.add("SolidCoreError", module.py().get_type::<SolidCoreError>())?;
     module.add_function(wrap_pyfunction!(_box, module)?)?;
     module.add_function(wrap_pyfunction!(_cylinder, module)?)?;

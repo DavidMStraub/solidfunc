@@ -6,7 +6,7 @@ from operator import add, sub
 import pytest
 import solidfunc as sf
 
-Boolean = Callable[[sf.Solid, sf.Solid], sf.Solid | None]
+Boolean = Callable[[sf.Shape, sf.Shape], sf.Shape | None]
 
 
 @pytest.mark.parametrize(

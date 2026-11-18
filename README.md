@@ -23,7 +23,8 @@ print(sf.bounds(moved))  # ((100.0, 0.0, 0.0), (110.0, 20.0, 30.0))
 sf.export_step(block, "hello.step")
 ```
 
-Geometry is opaque. Functions return new geometry and preserve their inputs.
+Geometry is represented by opaque `Shape` values. The current constructors
+create 3D solids. Functions return new geometry and preserve their inputs.
 Lengths are millimetres, volumes are cubic millimetres, and a box's `origin`
 is its lower corner. Currently implemented: `box`, `cylinder`, `union`,
 `intersection`, `difference`, `translate`, `volume`, `bounds`, and `export_step`.
@@ -65,8 +66,8 @@ if drilled is not None:
 ```
 
 An empty `intersection` or `difference` returns `None`. Results with multiple
-disconnected regions stay in a single `Solid` value; STEP export preserves
-all of them. `union` always returns a `Solid`.
+disconnected regions stay in a single `Shape` value; STEP export preserves
+all of them. `union` always returns a `Shape`.
 The `+` and `-` operators have the same behavior and preserve their operands.
 
 ## Development

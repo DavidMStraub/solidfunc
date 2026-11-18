@@ -8,6 +8,7 @@ import solidfunc as sf
 
 def test_box_geometry() -> None:
     block = sf.box(length=10, width=20, height=30, origin=(1, 2, 3))
+    assert type(block) is sf.Shape
     assert sf.volume(block) == pytest.approx(6000)
     assert sf.bounds(block) == ((1, 2, 3), (11, 22, 33))
 

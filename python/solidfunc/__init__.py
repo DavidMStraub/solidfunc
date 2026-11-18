@@ -19,14 +19,14 @@ from ._api import (
     union,
     volume,
 )
-from ._core import Solid, SolidCoreError
+from ._core import Shape, SolidCoreError
 
 __version__ = version("solidfunc")
 
 __all__ = [
     "Bounds",
     "Point3D",
-    "Solid",
+    "Shape",
     "SolidCoreError",
     "__version__",
     "bounds",
