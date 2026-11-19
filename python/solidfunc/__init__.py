@@ -26,7 +26,7 @@ from ._api import (
 from ._core import Edge, Face, KernelError, Path3D, Profile, Shape
 from ._frame import Plane
 from ._modeling import loft, polyline3d, revolve, spline, sweep
-from ._topology import edges, face_plane, faces, fillet
+from ._topology import chamfer, edges, face_plane, faces, fillet
 from .planar import (
     Curve2D,
     Path2D,
@@ -59,6 +59,7 @@ __all__ = [
     "arc",
     "bounds",
     "box",
+    "chamfer",
     "circle",
     "cylinder",
     "difference",

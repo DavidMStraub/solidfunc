@@ -73,6 +73,7 @@ knot parameter.
 | `edges(shape: Shape, /) -> tuple[Edge, ...]` | Returns read-only edge references for this shape. Circular edges include arcs. |
 | `face_plane(face: Face, /, *, x_dir: Point3D \| None = None) -> Plane` | Places a frame at a planar face's centroid with its normal pointing outward. |
 | `fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape` | Rounds selected edges on a copy. The references must come from this exact shape. |
+| `chamfer(shape: Shape, edges: Iterable[Edge], /, *, distance: float) -> Shape` | Bevels selected edges on a copy with equal setbacks along the adjacent faces. The references must come from this exact shape. |
 
 ## Measurement and STEP exchange
 

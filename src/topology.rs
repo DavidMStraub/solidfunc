@@ -114,20 +114,21 @@ fn _faces<'py>(py: Python<'py>, shape: Py<Shape>) -> PyResult<Bound<'py, PyTuple
     )
 }
 
-#[pyfunction]
-fn _fillet(
+fn finish_edges(
     py: Python<'_>,
     shape: Py<Shape>,
     edges: Vec<PyRef<'_, Edge>>,
-    radius: f64,
+    size: f64,
+    kind: Blend,
+    operation: &str,
 ) -> PyResult<Shape> {
     if edges
         .iter()
         .any(|edge| !edge.owner.bind(py).is(shape.bind(py)))
     {
-        return Err(PyValueError::new_err(
-            "fillet edges must belong to the supplied shape",
-        ));
+        return Err(PyValueError::new_err(format!(
+            "{operation} edges must belong to the supplied shape"
+        )));
     }
     let indices: Vec<_> = edges
         .iter()
@@ -150,16 +151,36 @@ fn _fillet(
         blend_ordered(
             &body,
             &order,
-            Blend::Round,
+            kind,
             &indices,
-            &[radius],
+            &[size],
             &[],
             Corners::Filled,
             BlendOptions::default(),
         )?;
         Ok(Shape { body })
     })
-    .map_err(|error| kernel_error("fillet", error))
+    .map_err(|error| kernel_error(operation, error))
+}
+
+#[pyfunction]
+fn _fillet(
+    py: Python<'_>,
+    shape: Py<Shape>,
+    edges: Vec<PyRef<'_, Edge>>,
+    radius: f64,
+) -> PyResult<Shape> {
+    finish_edges(py, shape, edges, radius, Blend::Round, "fillet")
+}
+
+#[pyfunction]
+fn _chamfer(
+    py: Python<'_>,
+    shape: Py<Shape>,
+    edges: Vec<PyRef<'_, Edge>>,
+    distance: f64,
+) -> PyResult<Shape> {
+    finish_edges(py, shape, edges, distance, Blend::Chamfer, "chamfer")
 }
 
 pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -168,5 +189,6 @@ pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(_edges, module)?)?;
     module.add_function(wrap_pyfunction!(_faces, module)?)?;
     module.add_function(wrap_pyfunction!(_fillet, module)?)?;
+    module.add_function(wrap_pyfunction!(_chamfer, module)?)?;
     Ok(())
 }

@@ -142,3 +142,17 @@ def test_straight_sweep_with_multiple_holes() -> None:
 
     assert sf.volume(swept) == pytest.approx(10 * (6**2 - 2) * pi)
     assert sf.volume(sf.extrude(profile, height=10)) == pytest.approx(sf.volume(swept))
+
+
+def test_chamfer_uses_equal_setbacks_and_preserves_the_source() -> None:
+    block = sf.box(length=12, width=8, height=6)
+    edge = next(edge for edge in sf.edges(block) if edge.length == pytest.approx(12))
+
+    beveled = sf.chamfer(block, [edge], distance=2)
+    assert sf.volume(beveled) == pytest.approx(12 * 8 * 6 - 12 * 2 * 2 / 2)
+    assert sf.volume(block) == pytest.approx(12 * 8 * 6)
+
+    with pytest.raises(ValueError, match="chamfer edges must belong"):
+        sf.chamfer(beveled, [edge], distance=1)
+    with pytest.raises(ValueError, match="distance"):
+        sf.chamfer(block, [edge], distance=0)

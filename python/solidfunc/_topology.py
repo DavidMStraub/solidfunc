@@ -55,3 +55,15 @@ def fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape:
     """
     _positive("radius", radius)
     return _core._fillet(shape, list(edges), radius)
+
+
+def chamfer(shape: Shape, edges: Iterable[Edge], /, *, distance: float) -> Shape:
+    """Bevel the selected edges of a copy using equal setbacks.
+
+    ``edges`` must contain distinct references from this exact ``shape``.
+    ``distance`` is the setback along each adjacent face in millimetres.
+    It must be positive and finite. The kernel may refuse a setback that
+    does not fit the geometry.
+    """
+    _positive("distance", distance)
+    return _core._chamfer(shape, list(edges), distance)
