@@ -50,7 +50,7 @@ knot parameter.
 | `extrude(profile: Profile, *, height: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
 | `revolve(profile: Profile, *, axis: Point3D, origin: Point3D = (0.0, 0.0, 0.0), angle: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
 | `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, degree: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. |
-| `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a single-boundary profile placed at the start of the path. Sharp polyline corners are mitred. |
+| `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a profile, including any holes, from the start of the path. Sharp polyline corners are mitred. |
 
 ## Solids
 

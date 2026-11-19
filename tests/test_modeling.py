@@ -112,3 +112,33 @@ def test_mirror_and_step_round_trip(tmp_path: Path) -> None:
         sf.import_step(invalid)
     with pytest.raises(FileNotFoundError):
         sf.import_step(tmp_path / "missing.step")
+
+
+def test_hollow_mitred_sweep() -> None:
+    outer = sf.path([sf.circle(radius=12)])
+    bore = sf.path([sf.circle(radius=8)])
+    profile = sf.profile(outer, holes=[bore])
+    path = sf.polyline3d([(0, 0, 0), (30, 0, 0), (30, 30, 0), (60, 30, 0)])
+    plane = sf.Plane.from_normal(normal=path.tangent_at(0))
+
+    elbow = sf.sweep(profile, path, plane=plane)
+    assert sf.volume(elbow, relative_accuracy=1e-4) == pytest.approx(
+        90 * (12**2 - 8**2) * pi
+    )
+    # A plug inside the bore at either end has no shared material.
+    for origin in [(0, 0, 0), (59, 30, 0)]:
+        plug = sf.rotate(sf.cylinder(radius=4, height=1), axis=(0, 1, 0), angle=90)
+        assert (
+            sf.intersection(elbow, sf.translate(plug, x=origin[0], y=origin[1])) is None
+        )
+
+
+def test_straight_sweep_with_multiple_holes() -> None:
+    outer = sf.path([sf.circle(radius=6)])
+    holes = [sf.path([sf.circle(radius=1, center=(x, 0))]) for x in (-2, 2)]
+    profile = sf.profile(outer, holes=holes)
+    path = sf.polyline3d([(2, 3, 4), (2, 3, 14)])
+    swept = sf.sweep(profile, path, plane=sf.Plane(origin=path.point_at(0)))
+
+    assert sf.volume(swept) == pytest.approx(10 * (6**2 - 2) * pi)
+    assert sf.volume(sf.extrude(profile, height=10)) == pytest.approx(sf.volume(swept))

@@ -79,10 +79,11 @@ def spline(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D:
 
 
 def sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape:
-    """Carry a single-boundary profile along a spatial path to form a solid.
+    """Carry a filled profile along a spatial path to form a solid.
 
     ``plane`` places the section at the start of ``path``, with its normal
-    parallel to the starting tangent. The section turns with the path.
+    parallel to the starting tangent. The section turns with the path,
+    and holes in the profile remain open along it.
     Straight segments meet at mitres at sharp polyline corners. The kernel
     can reject paths whose corners or curvature make the sweep self-intersect.
     """

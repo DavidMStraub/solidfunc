@@ -9,7 +9,7 @@ use solidcore::sweep::cornered::cornered_sweep;
 use solidcore::sweep::stations::{Laws, Path, Piece};
 use solidcore::Vec3;
 use solidcore_ops::sweep::{self, Curve, LoftSection, SweepFrame};
-use solidcore_ops::{curve_fit, Body, Error, Result};
+use solidcore_ops::{boolean::boolean, curve_fit, Body, BooleanOp, Error, Result};
 use solidcore_record::{brep::Curve as RecordCurve, Plane, Seg2};
 
 use crate::planar::Profile;
@@ -35,7 +35,7 @@ fn placed(segments: &[Seg2], plane: &Plane) -> Result<Vec<Curve>> {
 fn outer(profile: &Profile) -> PyResult<&[Seg2]> {
     if !profile.region.holes.is_empty() {
         return Err(PyValueError::new_err(
-            "revolve, loft, and sweep require a profile without holes",
+            "revolve and loft require a profile without holes",
         ));
     }
     Ok(&profile.region.outer.segs)
@@ -278,19 +278,26 @@ fn mitred_sweep(segments: &[Seg2], plane: &Plane, curves: &[Curve]) -> Result<Op
     Body::from_record(&record, false).map(|(body, _)| Some(body))
 }
 
+fn sweep_boundary(segments: &[Seg2], plane: &Plane, path: &[Curve]) -> Result<Body> {
+    if let Some(body) = mitred_sweep(segments, plane, path)? {
+        return Ok(body);
+    }
+    let curves = placed(segments, plane)?;
+    sweep::sweep_placed(&curves, path, SweepFrame::Follow, true).map(|(body, _, _)| body)
+}
+
 #[pyfunction]
 fn _sweep(py: Python<'_>, profile: &Profile, frame: Frame, path: &Path3D) -> PyResult<Shape> {
-    let segments = outer(profile)?;
     py.detach(|| {
         let plane = plane(frame);
-        if let Some(body) = mitred_sweep(segments, &plane, &path.curves)? {
-            return Ok(body);
+        let mut body = sweep_boundary(&profile.region.outer.segs, &plane, &path.curves)?;
+        // Sweep each opening along the same path and subtract it through both end caps.
+        for hole in &profile.region.holes {
+            let tool = sweep_boundary(&hole.segs, &plane, &path.curves)?;
+            body = boolean(body, tool, BooleanOp::Subtract)?.ok_or(Error::Empty)?;
         }
-        let curves = placed(segments, &plane)?;
-        sweep::sweep_placed(&curves, &path.curves, SweepFrame::Follow, true)
-            .map(|(body, _, _)| body)
+        Ok(Shape { body })
     })
-    .map(|body| Shape { body })
     .map_err(|error| kernel_error("sweep", error))
 }
 
