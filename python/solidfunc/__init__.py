@@ -23,10 +23,10 @@ from ._api import (
     union,
     volume,
 )
-from ._core import Edge, Face, KernelError, Path3D, Profile, Shape
+from ._core import Edge, Face, KernelError, Path3D, Profile, Shape, Vertex
 from ._frame import Plane
 from ._modeling import loft, polyline3d, revolve, spline, sweep
-from ._topology import chamfer, edges, face_plane, faces, fillet
+from ._topology import chamfer, edges, face_plane, faces, fillet, vertices
 from .planar import (
     Curve2D,
     Path2D,
@@ -56,6 +56,7 @@ __all__ = [
     "Point3D",
     "Profile",
     "Shape",
+    "Vertex",
     "__version__",
     "arc",
     "bounds",
@@ -87,5 +88,6 @@ __all__ = [
     "sweep",
     "translate",
     "union",
+    "vertices",
     "volume",
 ]

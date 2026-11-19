@@ -20,6 +20,7 @@ and angles are in degrees. Geometry operations preserve their inputs.
 | `Plane` | Right-handed frame with world `origin`, unit `x_dir` and `y_dir`, and a unit `normal`. |
 | `Face` | Shape-scoped reference with area centroid `center` and outward unit `normal` (`None` for a nonplanar face). |
 | `Edge` | Shape-scoped reference with `kind`, `length`, and optional `circle_center` and `circle_radius`. |
+| `Vertex` | Read-only vertex with world XYZ coordinates in `point`. |
 | `Profile` | Opaque filled XY region, optionally with holes |
 | `Shape` | Opaque solid geometry that can contain disconnected regions |
 
@@ -70,8 +71,9 @@ knot parameter.
 
 | Signature | Behavior |
 | --- | --- |
-| `faces(shape: Shape, /) -> tuple[Face, ...]` | Returns read-only face references for this shape. |
-| `edges(shape: Shape, /) -> tuple[Edge, ...]` | Returns read-only edge references for this shape. Circular edges include arcs. |
+| `faces(scope: Shape \| Edge, /) -> tuple[Face, ...]` | Returns read-only faces of a shape or unique faces incident to an edge. |
+| `edges(scope: Shape \| Face, /) -> tuple[Edge, ...]` | Returns read-only edges of a shape or the unique boundary edges of a face, including hole rims. |
+| `vertices(scope: Shape \| Face \| Edge, /) -> tuple[Vertex, ...]` | Returns unique topological vertices, including vertices on face holes. |
 | `face_plane(face: Face, /, *, x_dir: Point3D \| None = None) -> Plane` | Places a frame at a planar face's centroid with its normal pointing outward. |
 | `fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape` | Rounds selected edges on a copy. The references must come from this exact shape. |
 | `chamfer(shape: Shape, edges: Iterable[Edge], /, *, setback: float) -> Shape` | Bevels selected edges on a copy with equal setbacks along the adjacent faces. The references must come from this exact shape. |

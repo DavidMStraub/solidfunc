@@ -36,11 +36,16 @@ def test_face_plane_and_fillet_from_the_hole_rim() -> None:
     assert frame.origin == pytest.approx((15, 15, 5))
     assert frame.normal == (0, 0, 1)
 
-    (rim,) = [
-        edge
-        for edge in sf.edges(drilled)
-        if edge.circle_center == pytest.approx((15, 15, 5))
+    boundary = sf.edges(top)
+    assert sorted(edge.kind for edge in boundary) == [
+        "circle",
+        "line",
+        "line",
+        "line",
+        "line",
     ]
+    (rim,) = [edge for edge in boundary if edge.kind == "circle"]
+    assert rim.circle_center == pytest.approx((15, 15, 5))
     assert rim.kind == "circle"
     assert rim.circle_radius == pytest.approx(4)
     assert rim.length == pytest.approx(8 * pi)
@@ -163,3 +168,22 @@ def test_chamfer_uses_equal_setbacks_and_preserves_the_source() -> None:
         sf.chamfer(beveled, [edge], setback=1)
     with pytest.raises(ValueError, match="setback"):
         sf.chamfer(block, [edge], setback=0)
+
+
+def test_topology_traversal() -> None:
+    box = sf.box(size_x=2, size_y=3, size_z=4)
+    assert len(sf.vertices(box)) == 8
+    top = next(face for face in sf.faces(box) if face.normal == (0, 0, 1))
+    corners = {vertex.point for vertex in sf.vertices(top)}
+    assert corners == {(0, 0, 4), (2, 0, 4), (0, 3, 4), (2, 3, 4)}
+    for edge in sf.edges(top):
+        endpoints = {vertex.point for vertex in sf.vertices(edge)}
+        assert len(endpoints) == 2 and endpoints <= corners
+        adjacent = sf.faces(edge)
+        assert len(adjacent) == 2
+        assert any(face.normal == (0, 0, 1) for face in adjacent)
+
+    cylinder = sf.cylinder(radius=2, height=4)
+    circular = next(edge for edge in sf.edges(cylinder) if edge.kind == "circle")
+    assert len(sf.vertices(circular)) == 1
+    assert len(sf.faces(circular)) == 2

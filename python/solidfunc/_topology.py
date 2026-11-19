@@ -4,12 +4,15 @@ from collections.abc import Iterable
 
 from . import _core
 from ._api import Point3D, _positive
-from ._core import Edge, Face, Shape
+from ._core import Edge, Face, Shape, Vertex
 from ._frame import Plane
 
 
-def edges(shape: Shape, /) -> tuple[Edge, ...]:
-    """Return the shape's edges as read-only references.
+def edges(scope: Shape | Face, /) -> tuple[Edge, ...]:
+    """Return read-only edges of a shape or of one face.
+
+    A face query includes outer and hole boundaries and returns each
+    edge once, including seams shared by two uses on the same face.
 
     ``kind`` names the underlying curve (for example, ``"line"`` or
     ``"circle"``). Circular edges, including arcs, provide
@@ -18,17 +21,35 @@ def edges(shape: Shape, /) -> tuple[Edge, ...]:
     trimmed edge length in millimetres. References belong to this
     exact shape instance.
     """
-    return _core._edges(shape)
+    if isinstance(scope, Face):
+        return _core._face_edges(scope)
+    return _core._edges(scope)
 
 
-def faces(shape: Shape, /) -> tuple[Face, ...]:
-    """Return the shape's faces as read-only references.
+def faces(scope: Shape | Edge, /) -> tuple[Face, ...]:
+    """Return read-only faces of a shape or the unique faces incident to an edge.
 
     ``center`` is the area centroid in world millimetres. ``normal``
     is the outward unit vector for a planar face and ``None`` for a
     nonplanar face. References belong to this exact shape instance.
     """
-    return _core._faces(shape)
+    if isinstance(scope, Edge):
+        return _core._edge_faces(scope)
+    return _core._faces(scope)
+
+
+def vertices(scope: Shape | Face | Edge, /) -> tuple[Vertex, ...]:
+    """Return unique topological vertices in the given scope.
+
+    A face includes vertices on hole boundaries. A closed edge whose
+    endpoints share one vertex returns it once. Each vertex exposes its
+    world XYZ coordinates in millimetres via ``point``.
+    """
+    if isinstance(scope, Face):
+        return _core._face_vertices(scope)
+    if isinstance(scope, Edge):
+        return _core._edge_vertices(scope)
+    return _core._vertices(scope)
 
 
 def face_plane(face: Face, /, *, x_dir: Point3D | None = None) -> Plane:
