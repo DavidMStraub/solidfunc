@@ -38,6 +38,7 @@ from .planar import (
     path,
     polygon,
     profile,
+    rectangle,
 )
 
 __version__ = version("solidfunc")
@@ -79,6 +80,7 @@ __all__ = [
     "polygon",
     "polyline3d",
     "profile",
+    "rectangle",
     "revolve",
     "rotate",
     "spline",

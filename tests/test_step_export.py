@@ -14,7 +14,7 @@ import solidfunc as sf
 def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) -> None:
     cq = pytest.importorskip("cadquery")
     cylinder = sf.cylinder(radius=2, height=12, origin=(5, 5, -1))
-    block = sf.box(length=10, width=10, height=10)
+    block = sf.box(size_x=10, size_y=10, size_z=10)
     solid_count = 1
     if operation == "cylinder":
         result = cylinder
@@ -33,7 +33,7 @@ def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) ->
         expected_volume = 2000
         solid_count = 2
     else:
-        cutter = sf.box(length=2, width=12, height=12, origin=(4, -1, -1))
+        cutter = sf.box(size_x=2, size_y=12, size_z=12, origin=(4, -1, -1))
         result = sf.difference(block, cutter)
         expected_volume = 800
         solid_count = 2
@@ -58,7 +58,7 @@ def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) ->
 @pytest.mark.parametrize("as_string", [False, True])
 def test_step_round_trip(tmp_path: Path, as_string: bool) -> None:
     cq = pytest.importorskip("cadquery")
-    original = sf.box(length=10, width=20, height=30, origin=(1, 2, 3))
+    original = sf.box(size_x=10, size_y=20, size_z=30, origin=(1, 2, 3))
     block = sf.translate(original, x=100, y=-5, z=2)
     path = tmp_path / "block.step"
 
@@ -76,7 +76,7 @@ def test_step_round_trip(tmp_path: Path, as_string: bool) -> None:
 
 
 def test_step_file_and_input_preservation(tmp_path: Path) -> None:
-    block = sf.box(length=10, width=20, height=30)
+    block = sf.box(size_x=10, size_y=20, size_z=30)
     path = tmp_path / "block.step"
     sf.export_step(block, path, name="Block")
 
@@ -89,6 +89,6 @@ def test_step_file_and_input_preservation(tmp_path: Path) -> None:
 
 
 def test_step_io_error(tmp_path: Path) -> None:
-    block = sf.box(length=1, width=2, height=3)
+    block = sf.box(size_x=1, size_y=2, size_z=3)
     with pytest.raises(FileNotFoundError):
         sf.export_step(block, tmp_path / "missing" / "block.step")

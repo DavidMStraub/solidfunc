@@ -2,7 +2,7 @@
 
 import solidfunc as sf
 
-block = sf.box(length=10, width=20, height=30)
+block = sf.box(size_x=10, size_y=20, size_z=30)
 moved = sf.translate(block, x=100)
 
 print(f"Hello, SolidCore! Box volume: {sf.volume(block):.1f} mm³")

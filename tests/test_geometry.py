@@ -8,7 +8,7 @@ import solidfunc as sf
 
 
 def test_box_geometry() -> None:
-    block = sf.box(length=10, width=20, height=30, origin=(1, 2, 3))
+    block = sf.box(size_x=10, size_y=20, size_z=30, origin=(1, 2, 3))
     assert type(block) is sf.Shape
     assert sf.volume(block) == pytest.approx(6000)
     assert sf.bounds(block) == ((1, 2, 3), (11, 22, 33))
@@ -43,7 +43,7 @@ def test_invalid_cylinder_origin() -> None:
 
 
 def test_translation_preserves_input_and_aliases() -> None:
-    block = sf.box(length=10, width=20, height=30)
+    block = sf.box(size_x=10, size_y=20, size_z=30)
     alias = block
     moved = sf.translate(block, x=100, y=-5, z=2)
     moved_again = sf.translate(moved, x=10)
@@ -55,25 +55,27 @@ def test_translation_preserves_input_and_aliases() -> None:
     assert sf.volume(moved) == pytest.approx(sf.volume(block))
 
 
-@pytest.mark.parametrize("dimension", ["length", "width", "height"])
+@pytest.mark.parametrize("dimension", ["size_x", "size_y", "size_z"])
 @pytest.mark.parametrize("value", [0, -1, math.nan, math.inf, -math.inf])
 def test_invalid_dimensions(dimension: str, value: float) -> None:
-    dimensions = {"length": 10.0, "width": 20.0, "height": 30.0}
+    dimensions = {"size_x": 10.0, "size_y": 20.0, "size_z": 30.0}
     dimensions[dimension] = value
     with pytest.raises(ValueError, match=dimension):
         sf.box(**dimensions)
 
 
 def test_native_argument_error_preserves_body() -> None:
-    block = sf.box(length=10, width=20, height=30)
+    block = sf.box(size_x=10, size_y=20, size_z=30)
     with pytest.raises(ValueError, match="translate"):
         sf.translate(block, x=math.nan)
     assert sf.bounds(block) == ((0, 0, 0), (10, 20, 30))
 
 
 def test_rotation_about_offset_axis_preserves_shape() -> None:
-    block = sf.box(length=4, width=2, height=1, origin=(1, 2, 3))
-    rotated = sf.rotate(block, axis=(0, 0, 2), angle=90, origin=(1, 2, 3))
+    block = sf.box(size_x=4, size_y=2, size_z=1, origin=(1, 2, 3))
+    rotated = sf.rotate(
+        block, axis_direction=(0, 0, 2), angle_deg=90, axis_origin=(1, 2, 3)
+    )
 
     lower, upper = sf.bounds(rotated)
     assert lower == pytest.approx((-1, 2, 3))
@@ -92,9 +94,9 @@ def test_rotation_about_offset_axis_preserves_shape() -> None:
     ],
 )
 def test_invalid_rotation(axis: sf.Point3D, angle: float, origin: sf.Point3D) -> None:
-    block = sf.box(length=1, width=1, height=1)
+    block = sf.box(size_x=1, size_y=1, size_z=1)
     with pytest.raises(ValueError, match="rotate"):
-        sf.rotate(block, axis=axis, angle=angle, origin=origin)
+        sf.rotate(block, axis_direction=axis, angle_deg=angle, axis_origin=origin)
 
 
 def test_polygon_extrusion_preserves_reusable_profile(tmp_path: Path) -> None:
@@ -104,8 +106,8 @@ def test_polygon_extrusion_preserves_reusable_profile(tmp_path: Path) -> None:
     assert type(profile) is sf.Profile
     points.clear()
 
-    above = sf.extrude(profile, height=2)
-    below = sf.extrude(profile, height=-3)
+    above = sf.extrude(profile, distance=2)
+    below = sf.extrude(profile, distance=-3)
     assert sf.bounds(above) == ((0, 0, 0), (5, 4, 2))
     assert sf.bounds(below) == ((0, 0, -3), (5, 4, 0))
     assert sf.volume(above) == pytest.approx(22)
@@ -133,5 +135,5 @@ def test_invalid_polygon(points: list[sf.Point2D]) -> None:
 @pytest.mark.parametrize("height", [0, math.inf, -math.inf, math.nan])
 def test_invalid_extrusion_height(height: float) -> None:
     profile = sf.polygon([(0, 0), (1, 0), (0, 1)])
-    with pytest.raises(ValueError, match="height"):
-        sf.extrude(profile, height=height)
+    with pytest.raises(ValueError, match="distance"):
+        sf.extrude(profile, distance=height)

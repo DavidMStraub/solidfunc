@@ -27,9 +27,9 @@ def bearing_pillow_block(
     from the edges. Counterbores open on the +Z face.
     """
     block = sf.box(
-        length=length,
-        width=width,
-        height=thickness,
+        size_x=length,
+        size_y=width,
+        size_z=thickness,
         origin=(-length / 2, -width / 2, -thickness / 2),
     )
     # Extend through-cut tools beyond both faces of the plate.

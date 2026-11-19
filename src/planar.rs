@@ -225,18 +225,18 @@ fn _polygon(mut points: Vec<[f64; 2]>) -> PyResult<Profile> {
 fn _extrude(
     py: Python<'_>,
     profile: &Profile,
-    height: f64,
+    distance: f64,
     plane: crate::modeling::Frame,
 ) -> PyResult<Shape> {
-    if !height.is_finite() || height == 0.0 {
-        return Err(PyValueError::new_err("height must be finite and nonzero"));
+    if !distance.is_finite() || distance == 0.0 {
+        return Err(PyValueError::new_err("distance must be finite and nonzero"));
     }
     py.detach(|| {
         extrude_planar_regions(
             &crate::modeling::plane(plane),
             std::slice::from_ref(&profile.region),
-            height.min(0.0),
-            height.max(0.0),
+            distance.min(0.0),
+            distance.max(0.0),
         )
     })
     .map(|body| Shape { body })

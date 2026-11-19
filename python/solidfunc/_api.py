@@ -19,20 +19,20 @@ def _positive(name: str, value: float) -> None:
 
 def box(
     *,
-    length: float,
-    width: float,
-    height: float,
+    size_x: float,
+    size_y: float,
+    size_z: float,
     origin: Point3D = (0.0, 0.0, 0.0),
 ) -> Shape:
     """Construct a box extending along +X, +Y and +Z from its lower corner.
 
-    ``length``, ``width``, and ``height`` are the positive, finite dimensions
+    ``size_x``, ``size_y``, and ``size_z`` are the positive, finite dimensions
     along X, Y, and Z respectively. ``origin`` gives the (x, y, z) corner
     with the minimum coordinate along each axis. All values are in millimetres.
     """
-    for name, value in (("length", length), ("width", width), ("height", height)):
+    for name, value in (("size_x", size_x), ("size_y", size_y), ("size_z", size_z)):
         _positive(name, value)
-    return _core._box(origin, (length, width, height))
+    return _core._box(origin, (size_x, size_y, size_z))
 
 
 def cylinder(
@@ -75,14 +75,14 @@ def difference(left: Shape, right: Shape, /) -> Shape | None:
     return _core._difference(left, right)
 
 
-def volume(shape: Shape, *, relative_accuracy: float = 1e-9) -> float:
+def volume(shape: Shape, *, relative_tolerance: float = 1e-9) -> float:
     """Return the volume of ``shape`` in cubic millimetres.
 
-    ``relative_accuracy`` is a positive, finite, dimensionless accuracy
-    request for the kernel's volume calculation.
+    ``relative_tolerance`` is a positive, finite, dimensionless tolerance
+    requested for the kernel's volume integration.
     """
-    _positive("relative_accuracy", relative_accuracy)
-    return _core._volume(shape, relative_accuracy)
+    _positive("relative_tolerance", relative_tolerance)
+    return _core._volume(shape, relative_tolerance)
 
 
 def translate(shape: Shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Shape:
@@ -97,18 +97,18 @@ def translate(shape: Shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -
 def rotate(
     shape: Shape,
     *,
-    axis: Point3D,
-    angle: float,
-    origin: Point3D = (0.0, 0.0, 0.0),
+    axis_direction: Point3D,
+    angle_deg: float,
+    axis_origin: Point3D = (0.0, 0.0, 0.0),
 ) -> Shape:
     """Return a rotated copy of ``shape``.
 
-    ``axis`` is a finite, nonzero (x, y, z) direction vector. It need not
-    have unit length. ``origin`` is a point on the rotation axis, in
-    millimetres, and defaults to the world origin. ``angle`` is a finite
+    ``axis_direction`` is a finite, nonzero (x, y, z) direction vector. It need not
+    have unit length. ``axis_origin`` is a point on the rotation axis, in
+    millimetres, and defaults to the world origin. ``angle_deg`` is a finite
     angle in degrees. Positive angles follow the right-hand rule.
     """
-    return _core._rotate(shape, origin, axis, radians(angle))
+    return _core._rotate(shape, axis_origin, axis_direction, radians(angle_deg))
 
 
 def mirror(

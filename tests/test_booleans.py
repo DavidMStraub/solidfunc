@@ -25,7 +25,7 @@ def test_overlapping_boxes(
     lower: sf.Point3D,
     upper: sf.Point3D,
 ) -> None:
-    left = sf.box(length=4, width=3, height=2)
+    left = sf.box(size_x=4, size_y=3, size_z=2)
     right = sf.translate(left, x=2)
     left_alias, right_alias = left, right
 
@@ -48,7 +48,7 @@ def test_overlapping_boxes(
     "operation", [sf.union, sf.intersection, sf.difference, add, sub]
 )
 def test_same_operand(operation: Boolean) -> None:
-    block = sf.box(length=4, width=3, height=2)
+    block = sf.box(size_x=4, size_y=3, size_z=2)
     result = operation(block, block)
 
     if operation in (sf.difference, sub):
@@ -62,7 +62,7 @@ def test_same_operand(operation: Boolean) -> None:
 
 
 def test_chained_operators() -> None:
-    block = sf.box(length=4, width=3, height=2)
+    block = sf.box(size_x=4, size_y=3, size_z=2)
     shifted = sf.translate(block, x=2)
     result = (block + shifted) - shifted
 
@@ -77,7 +77,7 @@ def test_chained_operators() -> None:
 def test_operators_reject_unsupported_operands(
     operation: Callable[..., object],
 ) -> None:
-    block = sf.box(length=4, width=3, height=2)
+    block = sf.box(size_x=4, size_y=3, size_z=2)
     with pytest.raises(TypeError, match="unsupported operand"):
         operation(block, object())
     with pytest.raises(TypeError, match="unsupported operand"):
@@ -86,7 +86,7 @@ def test_operators_reject_unsupported_operands(
 
 
 def test_augmented_addition_preserves_alias() -> None:
-    block = sf.box(length=4, width=3, height=2)
+    block = sf.box(size_x=4, size_y=3, size_z=2)
     alias = block
     block += sf.translate(block, x=2)
 
@@ -96,7 +96,7 @@ def test_augmented_addition_preserves_alias() -> None:
 
 
 def test_disjoint_operands() -> None:
-    left = sf.box(length=4, width=3, height=2)
+    left = sf.box(size_x=4, size_y=3, size_z=2)
     right = sf.translate(left, x=10)
 
     combined = sf.union(left, right)
@@ -110,8 +110,8 @@ def test_disjoint_operands() -> None:
 
 
 def test_containment_and_difference_order() -> None:
-    outer = sf.box(length=10, width=10, height=10)
-    inner = sf.box(length=2, width=2, height=2, origin=(4, 4, 4))
+    outer = sf.box(size_x=10, size_y=10, size_z=10)
+    inner = sf.box(size_x=2, size_y=2, size_z=2, origin=(4, 4, 4))
 
     cavity = sf.difference(outer, inner)
     assert cavity is not None
@@ -122,8 +122,8 @@ def test_containment_and_difference_order() -> None:
 
 
 def test_difference_can_split_a_solid() -> None:
-    block = sf.box(length=6, width=2, height=2)
-    cutter = sf.box(length=2, width=4, height=4, origin=(2, -1, -1))
+    block = sf.box(size_x=6, size_y=2, size_z=2)
+    cutter = sf.box(size_x=2, size_y=4, size_z=4, origin=(2, -1, -1))
     result = sf.difference(block, cutter)
 
     assert result is not None

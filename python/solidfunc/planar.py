@@ -8,6 +8,7 @@ from math import radians
 from typing import TypeAlias
 
 from . import _core
+from ._api import _positive
 from ._core import Curve2D, Path2D, Profile, Shape
 from ._frame import _XY, Plane
 
@@ -25,6 +26,7 @@ __all__ = [
     "path",
     "polygon",
     "profile",
+    "rectangle",
 ]
 
 
@@ -38,20 +40,22 @@ def line(start: Point2D, end: Point2D, /) -> Curve2D:
 
 
 def arc(
-    *, center: Point2D, radius: float, start_angle: float, sweep_angle: float
+    *, center: Point2D, radius: float, start_angle_deg: float, sweep_angle_deg: float
 ) -> Curve2D:
     """Return a directed circular arc in the XY plane.
 
     ``center`` is the circle's (x, y) center and ``radius`` is its positive
-    radius, both in millimetres. ``start_angle`` is measured in degrees
-    counterclockwise from +X. ``sweep_angle`` is the signed travel in degrees
+    radius, both in millimetres. ``start_angle_deg`` is measured in degrees
+    counterclockwise from +X. ``sweep_angle_deg`` is the signed travel in degrees
     from that starting point. Positive sweeps go counterclockwise, negative
     sweeps go clockwise, and ±360 degrees makes a full circle.
 
     All parameters must be finite. A zero sweep or a sweep greater than
     one turn in magnitude raises ``ValueError``.
     """
-    return _core._arc(center, radius, radians(start_angle), radians(sweep_angle))
+    return _core._arc(
+        center, radius, radians(start_angle_deg), radians(sweep_angle_deg)
+    )
 
 
 def circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D:
@@ -60,7 +64,7 @@ def circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D:
     ``center`` is a finite (x, y) point and ``radius`` is positive and finite,
     both in millimetres. Use ``profile(path([curve]))`` to fill the circle.
     """
-    return arc(center=center, radius=radius, start_angle=0.0, sweep_angle=360.0)
+    return arc(center=center, radius=radius, start_angle_deg=0.0, sweep_angle_deg=360.0)
 
 
 def path(curves: Iterable[Curve2D], /) -> Path2D:
@@ -98,12 +102,25 @@ def polygon(points: Iterable[Point2D], /) -> Profile:
     return _core._polygon(list(points))
 
 
-def extrude(profile: Profile, *, height: float, plane: Plane = _XY) -> Shape:
+def rectangle(*, size_x: float, size_y: float, origin: Point2D = (0.0, 0.0)) -> Profile:
+    """Return a filled axis-aligned rectangle in the local XY plane.
+
+    ``size_x`` and ``size_y`` are positive, finite dimensions along X and Y.
+    ``origin`` is the (x, y) corner with the minimum coordinates.
+    All coordinates and dimensions are in millimetres.
+    """
+    _positive("size_x", size_x)
+    _positive("size_y", size_y)
+    x, y = origin
+    return polygon([(x, y), (x + size_x, y), (x + size_x, y + size_y), (x, y + size_y)])
+
+
+def extrude(profile: Profile, *, distance: float, plane: Plane = _XY) -> Shape:
     """Return a solid by sweeping a filled profile normal to its plane.
 
     ``plane`` places the profile's local XY coordinates, defaulting to world
-    XY. ``height`` is a finite, nonzero signed distance in millimetres.
+    XY. ``distance`` is a finite, nonzero signed distance in millimetres.
     Positive follows the plane normal, and negative goes the other way.
     The original profile remains reusable.
     """
-    return _core._extrude(profile, height, (plane.origin, plane.x_dir, plane.y_dir))
+    return _core._extrude(profile, distance, (plane.origin, plane.x_dir, plane.y_dir))
