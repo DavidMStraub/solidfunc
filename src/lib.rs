@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 use solidcore_ops::{affine, Body, BooleanOp, Error, Result};
 use solidcore_step::write::product::{solidcore_bodies, Header};
 
+mod mesh;
 mod modeling;
 mod planar;
 mod step_import;
@@ -162,5 +163,6 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     step_import::register(module)?;
     topology::register(module)?;
     modeling::register(module)?;
+    mesh::register(module)?;
     planar::register(module)
 }

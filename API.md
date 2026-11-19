@@ -1,6 +1,6 @@
 # solidfunc API reference
 
-Import the package as `import solidfunc as sf`. All functions below are
+Import the package as `import solidfunc as sf`. Modeling and mesh functions are
 available at the package root. The planar functions are also available from
 `solidfunc.planar`.
 
@@ -21,6 +21,7 @@ and angles are in degrees. Geometry operations preserve their inputs.
 | `Face` | Shape-scoped reference with area centroid `center` and outward unit `normal` (`None` for a nonplanar face). |
 | `Edge` | Shape-scoped reference with `kind`, `length`, and optional `circle_center` and `circle_radius`. |
 | `Vertex` | Read-only vertex with world XYZ coordinates in `point`. |
+| `Mesh` | Indexed display triangles, vertex normals, and visible CAD edge polylines. |
 | `Profile` | Opaque filled XY region, optionally with holes |
 | `Shape` | Opaque solid geometry that can contain disconnected regions |
 
@@ -90,3 +91,11 @@ knot parameter.
 Invalid argument values can raise `ValueError`. Kernel failures raise
 `KernelError` (a `RuntimeError` subclass). Filesystem errors from STEP exchange
 propagate as `OSError` subclasses.
+
+
+## Visualization
+
+| Signature | Behavior |
+| --- | --- |
+| `tessellate(shape: Shape, /, *, chord_tolerance: float \| None = None) -> Mesh` | Uses SolidCore to approximate a shape with triangles and CAD outlines. Chord tolerance is a positive target deviation in millimetres and defaults to a value based on the shape's size. |
+| `solidfunc.view.show(shape: Shape, /, *, chord_tolerance: float \| None = None, screenshot: str \| PathLike[str] \| None = None, jupyter_backend: str = "static") -> None` | Uses optional PyVista to display a part or save a PNG. In Jupyter the default is static. Install `pyvista[jupyter]` for the interactive `"client"` backend. |

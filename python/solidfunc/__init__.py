@@ -25,6 +25,7 @@ from ._api import (
 )
 from ._core import Edge, Face, KernelError, Path3D, Profile, Shape, Vertex
 from ._frame import Plane
+from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline, sweep
 from ._topology import chamfer, edges, face_plane, faces, fillet, vertices
 from .planar import (
@@ -49,6 +50,7 @@ __all__ = [
     "Edge",
     "Face",
     "KernelError",
+    "Mesh",
     "Path2D",
     "Path3D",
     "Plane",
@@ -86,6 +88,7 @@ __all__ = [
     "rotate",
     "spline",
     "sweep",
+    "tessellate",
     "translate",
     "union",
     "vertices",

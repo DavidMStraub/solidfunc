@@ -32,8 +32,26 @@ sf.export_step(moved, "block.step")
 Lengths are in millimetres. Operations preserve their inputs, and the exported
 STEP AP242 file opens in CAD tools.
 
-For more, see the [bearing pillow block example](examples/bearing_pillow_block.py).
 See the [API reference](API.md) for signatures, units, and geometry conventions.
+
+## Viewing parts
+
+Install PyVista separately with `pip install pyvista` in the same environment,
+then call `show()` with a solidfunc shape.
+
+```python
+from solidfunc.view import show
+
+show(moved)
+```
+
+Pass `screenshot="part.png"` to save a PNG. In Jupyter, `show()` displays a
+static preview by default. For an interactive view, install `pyvista[jupyter]`
+and pass `jupyter_backend="client"`.
+
+![Bearing pillow block with a through-hole and four counterbored mounts](docs/pillow-block.png)
+
+[Source for the bearing pillow block](examples/bearing_pillow_block.py)
 
 ## License
 
