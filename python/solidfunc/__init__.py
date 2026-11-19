@@ -6,6 +6,7 @@ opaque and operations leave their inputs unchanged.
 
 from importlib.metadata import version
 
+from . import planar
 from ._api import (
     Bounds,
     Point3D,
@@ -14,27 +15,73 @@ from ._api import (
     cylinder,
     difference,
     export_step,
+    import_step,
     intersection,
+    mirror,
+    rotate,
     translate,
     union,
     volume,
 )
-from ._core import KernelError, Shape
+from ._core import Edge, Face, KernelError, Path3D, Profile, Shape
+from ._frame import Plane
+from ._modeling import loft, polyline3d, revolve, spline, sweep
+from ._topology import edges, face_plane, faces, fillet
+from .planar import (
+    Curve2D,
+    Path2D,
+    Point2D,
+    arc,
+    circle,
+    extrude,
+    line,
+    path,
+    polygon,
+    profile,
+)
 
 __version__ = version("solidfunc")
 
 __all__ = [
     "Bounds",
+    "Curve2D",
+    "Edge",
+    "Face",
     "KernelError",
+    "Path2D",
+    "Path3D",
+    "Plane",
+    "Point2D",
     "Point3D",
+    "Profile",
     "Shape",
     "__version__",
+    "arc",
     "bounds",
     "box",
+    "circle",
     "cylinder",
     "difference",
+    "edges",
     "export_step",
+    "extrude",
+    "face_plane",
+    "faces",
+    "fillet",
+    "import_step",
     "intersection",
+    "line",
+    "loft",
+    "mirror",
+    "path",
+    "planar",
+    "polygon",
+    "polyline3d",
+    "profile",
+    "revolve",
+    "rotate",
+    "spline",
+    "sweep",
     "translate",
     "union",
     "volume",

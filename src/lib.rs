@@ -6,8 +6,13 @@
 use pyo3::create_exception;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
-use solidcore_ops::{affine, Body, BooleanOp, Error};
+use solidcore_ops::{affine, Body, BooleanOp, Error, Result};
 use solidcore_step::write::product::{solidcore_bodies, Header};
+
+mod modeling;
+mod planar;
+mod step_import;
+mod topology;
 
 create_exception!(_core, KernelError, PyRuntimeError);
 
@@ -89,15 +94,34 @@ fn _volume(py: Python<'_>, shape: &Shape, relative_accuracy: f64) -> PyResult<f6
         .map_err(|error| kernel_error("volume", error))
 }
 
+fn transformed(shape: &Shape, matrix: &affine::Matrix) -> Result<Shape> {
+    let body = shape.body.copy()?;
+    body.transform(matrix)?;
+    Ok(Shape { body })
+}
+
 #[pyfunction]
 fn _translate(py: Python<'_>, shape: &Shape, offset: [f64; 3]) -> PyResult<Shape> {
-    py.detach(|| {
-        let matrix = affine::translation(offset)?;
-        let body = shape.body.copy()?;
-        body.transform(&matrix)?;
-        Ok(Shape { body })
-    })
-    .map_err(|error| kernel_error("translate", error))
+    py.detach(|| transformed(shape, &affine::translation(offset)?))
+        .map_err(|error| kernel_error("translate", error))
+}
+
+#[pyfunction]
+fn _rotate(
+    py: Python<'_>,
+    shape: &Shape,
+    origin: [f64; 3],
+    axis: [f64; 3],
+    angle: f64,
+) -> PyResult<Shape> {
+    py.detach(|| transformed(shape, &affine::rotation(origin, axis, angle)?))
+        .map_err(|error| kernel_error("rotate", error))
+}
+
+#[pyfunction]
+fn _mirror(py: Python<'_>, shape: &Shape, origin: [f64; 3], normal: [f64; 3]) -> PyResult<Shape> {
+    py.detach(|| transformed(shape, &affine::reflection(origin, normal)?))
+        .map_err(|error| kernel_error("mirror", error))
 }
 
 #[pyfunction]
@@ -131,7 +155,12 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(_difference, module)?)?;
     module.add_function(wrap_pyfunction!(_volume, module)?)?;
     module.add_function(wrap_pyfunction!(_translate, module)?)?;
+    module.add_function(wrap_pyfunction!(_rotate, module)?)?;
     module.add_function(wrap_pyfunction!(_bounds, module)?)?;
     module.add_function(wrap_pyfunction!(_step_text, module)?)?;
-    Ok(())
+    module.add_function(wrap_pyfunction!(_mirror, module)?)?;
+    step_import::register(module)?;
+    topology::register(module)?;
+    modeling::register(module)?;
+    planar::register(module)
 }
