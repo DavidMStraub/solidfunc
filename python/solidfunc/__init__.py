@@ -27,7 +27,7 @@ from ._core import Edge, Face, KernelError, Path3D, Profile, Shape, Vertex
 from ._frame import Plane
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline, sweep
-from ._topology import chamfer, edges, face_plane, faces, fillet, vertices
+from ._topology import chamfer, edges, faces, fillet, vertices
 from .planar import (
     Curve2D,
     Path2D,
@@ -70,7 +70,6 @@ __all__ = [
     "edges",
     "export_step",
     "extrude",
-    "face_plane",
     "faces",
     "fillet",
     "import_step",

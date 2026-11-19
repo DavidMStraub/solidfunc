@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from math import hypot, isfinite
 
 from ._api import Point3D
+from ._core import Face
 
 
 def _vector(value: Point3D) -> Point3D:
@@ -77,6 +78,20 @@ class Plane:
         if hypot(*y_dir) <= 1e-12:
             raise ValueError("plane x direction must be nonparallel to the normal")
         return cls(origin=origin, x_dir=_cross(y_dir, normal), y_dir=y_dir)
+
+    @classmethod
+    def from_face(cls, face: Face, /, *, x_dir: Point3D | None = None) -> "Plane":
+        """Place a frame at a planar face's centroid, with its normal outward.
+
+        ``x_dir`` is a world direction projected onto the face to orient local
+        X. If omitted, use the world axis least aligned with the normal.
+        A nonplanar face or a direction parallel to the normal raises
+        ``ValueError``.
+        """
+        normal = face.normal
+        if normal is None:
+            raise ValueError("Plane.from_face requires a planar face")
+        return cls.from_normal(origin=face.center, normal=normal, x_dir=x_dir)
 
     @property
     def normal(self) -> Point3D:

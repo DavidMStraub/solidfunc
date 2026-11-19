@@ -3,9 +3,8 @@
 from collections.abc import Iterable
 
 from . import _core
-from ._api import Point3D, _positive
+from ._api import _positive
 from ._core import Edge, Face, Shape, Vertex
-from ._frame import Plane
 
 
 def edges(scope: Shape | Face, /) -> tuple[Edge, ...]:
@@ -50,21 +49,6 @@ def vertices(scope: Shape | Face | Edge, /) -> tuple[Vertex, ...]:
     if isinstance(scope, Edge):
         return _core._edge_vertices(scope)
     return _core._vertices(scope)
-
-
-def face_plane(face: Face, /, *, x_dir: Point3D | None = None) -> Plane:
-    """Return a placement frame at a planar face's centroid.
-
-    The frame normal points outward. The world direction ``x_dir``
-    is projected onto the face to orient the frame. If omitted, the
-    world axis least aligned with the normal supplies this direction.
-    Nonplanar faces and directions parallel to the normal raise
-    ``ValueError``.
-    """
-    normal = face.normal
-    if normal is None:
-        raise ValueError("face_plane requires a planar face")
-    return Plane.from_normal(origin=face.center, normal=normal, x_dir=x_dir)
 
 
 def fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape:

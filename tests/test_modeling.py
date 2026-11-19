@@ -32,7 +32,7 @@ def test_face_plane_and_fillet_from_the_hole_rim() -> None:
     assert drilled is not None
 
     (top,) = [face for face in sf.faces(drilled) if face.normal == (0, 0, 1)]
-    frame = sf.face_plane(top)
+    frame = sf.Plane.from_face(top)
     assert frame.origin == pytest.approx((15, 15, 5))
     assert frame.normal == (0, 0, 1)
 

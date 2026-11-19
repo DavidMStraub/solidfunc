@@ -7,39 +7,25 @@ available at the package root. The planar functions are also available from
 Lengths and coordinates are in millimetres, volumes are in cubic millimetres,
 and angles are in degrees. Geometry operations preserve their inputs.
 
-## Types
+`Point2D` and `Point3D` are coordinate tuple aliases. `Bounds` is a pair of
+XYZ tuples. Instantiate `Plane` directly or use one of its factories. `Mesh`
+is a dataclass that can also be constructed directly. The native geometry
+and topology types are created by the functions listed below.
 
-| Type | Meaning |
-| --- | --- |
-| `Point2D` | `tuple[float, float]`, in XY order |
-| `Point3D` | `tuple[float, float, float]`, in XYZ order |
-| `Bounds` | `tuple[Point3D, Point3D]`, minimum and maximum corners |
-| `Curve2D` | Directed XY curve with read-only `start: Point2D` and `end: Point2D` |
-| `Path2D` | Connected XY curves with read-only `curves: tuple[Curve2D, ...]` and `is_closed: bool` |
-| `Path3D` | Spatial polyline or interpolating spline. Read-only `is_closed`, plus `point_at(parameter: float) -> Point3D` and `tangent_at(parameter: float) -> Point3D`. |
-| `Plane` | Right-handed frame with world `origin`, unit `x_dir` and `y_dir`, and a unit `normal`. |
-| `Face` | Shape-scoped reference with area centroid `center` and outward unit `normal` (`None` for a nonplanar face). |
-| `Edge` | Shape-scoped reference with `kind`, `length`, and optional `circle_center` and `circle_radius`. |
-| `Vertex` | Read-only vertex with world XYZ coordinates in `point`. |
-| `Mesh` | Indexed display triangles, vertex normals, and visible CAD edge polylines. |
-| `Profile` | Opaque filled XY region, optionally with holes |
-| `Shape` | Opaque solid geometry that can contain disconnected regions |
-
-## Frames and spatial paths
+## Placement frames
 
 | Signature | Behavior |
 | --- | --- |
 | `Plane(*, origin: Point3D = (0.0, 0.0, 0.0), x_dir: Point3D = (1.0, 0.0, 0.0), y_dir: Point3D = (0.0, 1.0, 0.0))` | Keeps the supplied X direction and makes Y perpendicular to it. The default frame is world XY. |
 | `Plane.from_normal(*, normal: Point3D, origin: Point3D = (0.0, 0.0, 0.0), x_dir: Point3D \| None = None) -> Plane` | Points local Z along `normal` and projects the optional X direction onto the plane. |
+| `Plane.from_face(face: Face, /, *, x_dir: Point3D \| None = None) -> Plane` | Uses a planar face's centroid and outward normal. Projects the optional X direction onto the plane. |
 | `Plane.point(x: float, y: float, z: float = 0.0) -> Point3D` | Converts local frame coordinates to world coordinates. |
-| `polyline3d(points: Iterable[Point3D], /) -> Path3D` | Joins two or more world points with straight segments. |
-| `spline(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D` | Interpolates a clamped B-spline through world points in traversal order. |
 
-Path evaluation uses a dimensionless parameter on [0, 1]. Each polyline
-segment covers an equal share of the interval. Splines use their normalized
-knot parameter.
+## Planar construction
 
-## Curves, paths, and profiles
+`Curve2D` stores a native analytic line or arc. `Path2D` stores an ordered
+chain of these curves, exposed by `.curves`, and reports closure via
+`.is_closed`. A `Profile` is a filled region in local XY.
 
 | Signature | Behavior |
 | --- | --- |
@@ -50,17 +36,39 @@ knot parameter.
 | `profile(outer: Path2D, /, *, holes: Iterable[Path2D] = ()) -> Profile` | Fills a simple closed path. Hole paths must be closed, strictly inside the outer path, and mutually disjoint. Either winding is accepted. |
 | `polygon(points: Iterable[Point2D], /) -> Profile` | Fills a simple straight-edged outline from at least three vertices in boundary order. Closure is automatic. |
 | `rectangle(*, size_x: float, size_y: float, origin: Point2D = (0.0, 0.0)) -> Profile` | Fills an axis-aligned XY rectangle from its minimum corner. |
-| `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
-| `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
-| `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, interpolation_deg: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `interpolation_deg` is a polynomial degree. |
-| `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a profile, including any holes, from the start of the path. Sharp polyline corners are mitred. |
 
-## Solids
+## Spatial paths
+
+`Path3D` stores native line segments or an interpolating B-spline with its
+control points and knots. It exposes `.is_closed`, `.point_at(parameter)`,
+and `.tangent_at(parameter)`.
+
+| Signature | Behavior |
+| --- | --- |
+| `polyline3d(points: Iterable[Point3D], /) -> Path3D` | Joins two or more world points with straight segments. |
+| `spline(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D` | Interpolates a clamped B-spline through world points in traversal order. |
+
+Path evaluation uses a dimensionless parameter on [0, 1]. Each polyline
+segment covers an equal share of the interval. Splines use their normalized
+knot parameter.
+
+## Building solids
+
+`Shape` holds a native solid B-rep, which can contain disconnected regions.
 
 | Signature | Behavior |
 | --- | --- |
 | `box(*, size_x: float, size_y: float, size_z: float, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Box with positive sizes along +X, +Y, and +Z from its minimum corner. |
 | `cylinder(*, radius: float, height: float, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Cylinder with positive radius and height extending along +Z from its base center. |
+| `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
+| `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
+| `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, interpolation_deg: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `interpolation_deg` is a polynomial degree. |
+| `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a profile, including any holes, from the start of the path. Sharp polyline corners are mitred. |
+
+## Transformations and booleans
+
+| Signature | Behavior |
+| --- | --- |
 | `translate(shape: Shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Shape` | Moves a copy by signed offsets along the world axes. |
 | `rotate(shape: Shape, *, axis_direction: Point3D, angle_deg: float, axis_origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Rotates a copy about the line through `axis_origin` in the nonzero direction `axis_direction`. Positive angles follow the right-hand rule. |
 | `mirror(shape: Shape, *, normal: Point3D, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Reflects a copy across the plane through `origin` with the specified normal. |
@@ -70,12 +78,21 @@ knot parameter.
 
 ## Topology and finishing
 
+A `Face` or `Edge` retains a reference to the exact `Shape` object it came
+from. Edges returned by `edges(face)` belong to that same shape and can be
+used with `fillet()` or `chamfer()`. After an operation creates a new shape,
+query that result for its own edge references.
+
+A `Face` exposes its centroid through `.center` and its outward unit normal
+through `.normal` (`None` for a nonplanar face). An `Edge` exposes `.kind`,
+`.length`, `.circle_center`, and `.circle_radius`. A `Vertex` exposes its XYZ
+position via `.point`.
+
 | Signature | Behavior |
 | --- | --- |
 | `faces(scope: Shape \| Edge, /) -> tuple[Face, ...]` | Returns read-only faces of a shape or unique faces incident to an edge. |
 | `edges(scope: Shape \| Face, /) -> tuple[Edge, ...]` | Returns read-only edges of a shape or the unique boundary edges of a face, including hole rims. |
 | `vertices(scope: Shape \| Face \| Edge, /) -> tuple[Vertex, ...]` | Returns unique topological vertices, including vertices on face holes. |
-| `face_plane(face: Face, /, *, x_dir: Point3D \| None = None) -> Plane` | Places a frame at a planar face's centroid with its normal pointing outward. |
 | `fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape` | Rounds selected edges on a copy. The references must come from this exact shape. |
 | `chamfer(shape: Shape, edges: Iterable[Edge], /, *, setback: float) -> Shape` | Bevels selected edges on a copy with equal setbacks along the adjacent faces. The references must come from this exact shape. |
 
