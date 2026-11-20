@@ -1,10 +1,11 @@
-"""Rigid frames for placing XY geometry in model space."""
+"""Rigid frames for placing XY geometry and shapes in model space."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import hypot, isfinite
 
+from . import _core
 from ._api import Point3D
-from ._core import Face
+from ._core import Face, Shape
 
 
 def _vector(value: Point3D) -> Point3D:
@@ -98,6 +99,14 @@ class Plane:
         """Return the unit world direction of positive local Z."""
         return _unit(_cross(self.x_dir, self.y_dir))
 
+    def offset(self, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> "Plane":
+        """Return this frame moved by local offsets, keeping its orientation.
+
+        ``x``, ``y``, and ``z`` are signed millimetres along this frame's own
+        X, Y, and normal directions.
+        """
+        return replace(self, origin=self.point(x, y, z))
+
     def point(self, x: float, y: float, z: float = 0.0) -> Point3D:
         """Map local XYZ coordinates in millimetres to world XYZ."""
 
@@ -110,6 +119,17 @@ class Plane:
             oy + x * xy + y * yy + z * zy,
             oz + x * xz + y * yz + z * zz,
         )
+
+
+def place(shape: Shape, plane: Plane, /) -> Shape:
+    """Return a copy of ``shape`` carried from world XY onto ``plane``.
+
+    The world origin moves to ``plane.origin`` and the world X, Y, and Z
+    axes turn onto the plane's X direction, Y direction, and normal. A
+    primitive built at the origin therefore lands centred on the plane with
+    its base on it, for example ``place(stud, Plane.from_face(top))``.
+    """
+    return _core._place(shape, plane.origin, plane.x_dir, plane.y_dir, plane.normal)
 
 
 _XY = Plane()

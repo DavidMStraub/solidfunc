@@ -30,6 +30,16 @@ impl Shape {
         _union(py, self, other)
     }
 
+    /// Intersect like `intersection`, but raise `EmptyResultError` when the operands share no
+    /// material.
+    fn __and__(&self, py: Python<'_>, other: &Shape) -> PyResult<Shape> {
+        _intersection(py, self, other)?.ok_or_else(|| {
+            EmptyResultError::new_err(
+                "intersection found no shared material; use intersection() to receive None instead",
+            )
+        })
+    }
+
     /// Subtract like `difference`, but raise `EmptyResultError` when no material remains,
     /// so chained subtraction never yields `None`.
     fn __sub__(&self, py: Python<'_>, other: &Shape) -> PyResult<Shape> {
@@ -87,6 +97,21 @@ fn _union(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Shape> {
 }
 
 #[pyfunction]
+fn _union_all(py: Python<'_>, shapes: Vec<PyRef<'_, Shape>>) -> PyResult<Shape> {
+    let bodies: Vec<&Body> = shapes.iter().map(|shape| &shape.body).collect();
+    py.detach(|| {
+        // The kernel consumes its operands; copy so the inputs stay unchanged.
+        let copies = bodies
+            .iter()
+            .map(|body| body.copy())
+            .collect::<Result<Vec<_>>>()?;
+        solidcore_ops::boolean::union_all(copies)
+    })
+    .map(|body| Shape { body })
+    .map_err(|error| kernel_error("union", error))
+}
+
+#[pyfunction]
 fn _intersection(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Option<Shape>> {
     boolean_result(py, left, right, BooleanOp::Intersect, "intersection")
 }
@@ -126,6 +151,23 @@ fn _rotate(
         .map_err(|error| kernel_error("rotate", error))
 }
 
+/// Map world coordinates onto a frame: the origin to `origin` and the X, Y, and Z axes to
+/// the given orthonormal directions.
+#[pyfunction]
+fn _place(
+    py: Python<'_>,
+    shape: &Shape,
+    origin: [f64; 3],
+    x: [f64; 3],
+    y: [f64; 3],
+    z: [f64; 3],
+) -> PyResult<Shape> {
+    let row = |[a, b, c]: [f64; 3], w: f64| [a, b, c, w];
+    let matrix = [row(x, 0.0), row(y, 0.0), row(z, 0.0), row(origin, 1.0)];
+    py.detach(|| transformed(shape, &matrix))
+        .map_err(|error| kernel_error("place", error))
+}
+
 #[pyfunction]
 fn _mirror(py: Python<'_>, shape: &Shape, origin: [f64; 3], normal: [f64; 3]) -> PyResult<Shape> {
     py.detach(|| transformed(shape, &affine::reflection(origin, normal)?))
@@ -163,6 +205,8 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(_box, module)?)?;
     module.add_function(wrap_pyfunction!(_cylinder, module)?)?;
     module.add_function(wrap_pyfunction!(_union, module)?)?;
+    module.add_function(wrap_pyfunction!(_union_all, module)?)?;
+    module.add_function(wrap_pyfunction!(_place, module)?)?;
     module.add_function(wrap_pyfunction!(_intersection, module)?)?;
     module.add_function(wrap_pyfunction!(_difference, module)?)?;
     module.add_function(wrap_pyfunction!(_volume, module)?)?;

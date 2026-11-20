@@ -7,10 +7,10 @@ millimetres. Angles are in degrees.
 
 from collections.abc import Iterable
 from math import isfinite, radians
-from typing import TypeAlias
+from typing import TypeAlias, overload
 
 from . import _core
-from ._api import _positive
+from ._api import _positive, _radius
 from ._core import Curve2D, Path2D, Profile, Shape
 from ._frame import _XY, Plane
 
@@ -63,13 +63,24 @@ def arc(
     )
 
 
-def circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D:
+@overload
+def circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D: ...
+@overload
+def circle(*, diameter: float, center: Point2D = (0.0, 0.0)) -> Curve2D: ...
+def circle(
+    *,
+    radius: float | None = None,
+    diameter: float | None = None,
+    center: Point2D = (0.0, 0.0),
+) -> Curve2D:
     """Return a closed curve traversed once counterclockwise from its +X point.
 
-    ``center`` is a finite (x, y) point and ``radius`` is positive and finite,
-    both in millimetres. Use ``profile(circle(...))`` to fill the circle.
+    Give exactly one of ``radius`` or ``diameter``, positive and finite.
+    ``center`` is a finite (x, y) point. All are in millimetres. Use
+    ``profile(circle(...))`` to fill the circle.
     """
-    return arc(center=center, radius=radius, start_angle_deg=0.0, sweep_angle_deg=360.0)
+    size = _radius(radius, diameter)
+    return arc(center=center, radius=size, start_angle_deg=0.0, sweep_angle_deg=360.0)
 
 
 def path(curves: Iterable[Curve2D], /) -> Path2D:

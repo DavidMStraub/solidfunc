@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 from math import radians
+from typing import overload
 
 from . import _core
 from ._api import Point3D
@@ -34,6 +35,23 @@ def revolve(
         axis_direction,
         radians(angle_deg),
     )
+
+
+@overload
+def loft(sections: Iterable[tuple[Profile, Plane]], /, *, degree: int = 1) -> Shape:
+    """Loft through filled profiles, each placed by its plane.
+
+    Boundaries are matched automatically between sections.
+    """
+
+
+@overload
+def loft(sections: Iterable[Path3D], /, *, degree: int = 1) -> Shape:
+    """Loft through closed spatial paths with corresponding curves.
+
+    Every path needs the same number of curves, in the same traversal
+    order, with corresponding starts.
+    """
 
 
 def loft(

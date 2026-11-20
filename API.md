@@ -12,8 +12,8 @@ Naming conventions: planar constructors have no suffix (`line`, `polyline`,
 (`polyline3d`, `spline3d`). A `_deg` suffix always names an angle in degrees;
 a polynomial degree is spelled `degree`.
 
-`Point2D` and `Point3D` are coordinate tuple aliases. `Bounds` is a pair of
-XYZ tuples. Instantiate `Plane` directly or use one of its factories. `Mesh`
+`Point2D` and `Point3D` are coordinate tuple aliases. `Bounds` is a named
+tuple `(min, max)` of XYZ corners with `.size` and `.center` properties. Instantiate `Plane` directly or use one of its factories. `Mesh`
 is a dataclass that can also be constructed directly. The native geometry
 and topology types are created by the functions listed below.
 
@@ -25,6 +25,8 @@ and topology types are created by the functions listed below.
 | `Plane.from_normal(*, normal: Point3D, origin: Point3D = (0.0, 0.0, 0.0), x_dir: Point3D \| None = None) -> Plane` | Points local Z along `normal` and projects the optional X direction onto the plane. |
 | `Plane.from_face(face: Face, /, *, x_dir: Point3D \| None = None) -> Plane` | Uses a planar face's centroid and outward normal. Projects the optional X direction onto the plane. |
 | `Plane.point(x: float, y: float, z: float = 0.0) -> Point3D` | Converts local frame coordinates to world coordinates. |
+| `Plane.offset(*, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Plane` | Moves the frame by offsets along its own X, Y, and normal directions, keeping its orientation. |
+| `place(shape: Shape, plane: Plane, /) -> Shape` | Carries a copy from world XY onto the plane: the origin to `plane.origin`, world X, Y, and Z onto the plane's X, Y, and normal. A primitive lands centred on the plane with its base on it. |
 
 ## Planar construction
 
@@ -39,7 +41,7 @@ and reports closure via `.is_closed`. `Boundary` is the alias
 | --- | --- |
 | `line(start: Point2D, end: Point2D, /) -> Curve2D` | Directed segment between distinct endpoints. |
 | `arc(*, center: Point2D, radius: float, start_angle_deg: float, sweep_angle_deg: float) -> Curve2D` | Circular arc. Start is measured counterclockwise from +X. Sweep is positive counterclockwise or negative clockwise, up to one full turn. |
-| `circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D` | Full circle starting at its +X point and going counterclockwise. |
+| `circle(*, radius: float \| diameter: float, center: Point2D = (0.0, 0.0)) -> Curve2D` | Full circle starting at its +X point and going counterclockwise. Give exactly one of `radius` or `diameter`. |
 | `path(curves: Iterable[Curve2D], /) -> Path2D` | Joins a nonempty sequence in traversal order. Neighboring endpoints must be within 1e-7 mm. The same tolerance determines closure. |
 | `polyline(points: Iterable[Point2D], /) -> Path2D` | Straight segments through at least two points. Open unless the last point repeats the first. |
 | `polygon(points: Iterable[Point2D], /) -> Path2D` | Closed straight-edged boundary through at least three vertices in boundary order. Closure is automatic. |
@@ -68,14 +70,16 @@ knot parameter.
 | Signature | Behavior |
 | --- | --- |
 | `box(*, size_x: float, size_y: float, size_z: float) -> Shape` | Box with positive sizes, centred in X and Y, rising from z = 0 to `size_z`. |
-| `cylinder(*, radius: float, height: float) -> Shape` | Cylinder with positive radius and height on the Z axis, rising from z = 0 to `height`. |
-
-Primitives share one convention: centred in local XY with the base at
-z = 0. Position them with `translate`, `rotate`, or `mirror`.
+| `cylinder(*, radius: float \| diameter: float, height: float) -> Shape` | Cylinder on the Z axis, rising from z = 0 to `height`. Give exactly one of `radius` or `diameter`. |
 | `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
 | `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
 | `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, degree: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `degree` is the polynomial degree in the direction through the sections. |
 | `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a profile, including any holes, from the start of the path. Sharp polyline corners are mitred. |
+
+Primitives share one convention: centred in local XY with the base at
+z = 0. Position them with `place`, `translate`, `rotate`, or `mirror`.
+`loft` has two typed overloads, one for `(Profile, Plane)` pairs and one for
+`Path3D` sections.
 
 ## Transformations and booleans
 
@@ -84,8 +88,8 @@ z = 0. Position them with `translate`, `rotate`, or `mirror`.
 | `translate(shape: Shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Shape` | Moves a copy by signed offsets along the world axes. |
 | `rotate(shape: Shape, *, axis_direction: Point3D, angle_deg: float, axis_origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Rotates a copy about the line through `axis_origin` in the nonzero direction `axis_direction`. Positive angles follow the right-hand rule. |
 | `mirror(shape: Shape, *, normal: Point3D, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Reflects a copy across the plane through `origin` with the specified normal. |
-| `union(left: Shape, right: Shape, /) -> Shape` | Material in either operand. Also `left + right`. |
-| `intersection(left: Shape, right: Shape, /) -> Shape \| None` | Material in both operands. Returns `None` if empty. |
+| `union(shape: Shape, /, *shapes: Shape) -> Shape` | Material in any operand. `union(*parts)` combines many shapes in one kernel operation. `left + right` unites two. |
+| `intersection(left: Shape, right: Shape, /) -> Shape \| None` | Material in both operands. Returns `None` if empty. `left & right` is the same operation but raises `EmptyResultError` instead. |
 | `difference(left: Shape, right: Shape, /) -> Shape \| None` | Material in `left` after removing `right`. Returns `None` if empty. `left - right` is the same operation but raises `EmptyResultError` (a `ValueError` subclass) instead, so chained subtraction never yields `None`. |
 
 ## Topology and finishing
@@ -99,8 +103,8 @@ shape object, so sets and `in` work across queries. `fillet()` and
 `chamfer()` treat repeated references to one edge as a single edge.
 
 A `Face` exposes its area centroid through `.centroid` and its outward unit
-normal through `.planar_normal` (`None` for a nonplanar face). An `Edge` exposes `.kind`,
-`.length`, `.circle_center`, and `.circle_radius`. A `Vertex` exposes its XYZ
+normal through `.planar_normal` (`None` for a nonplanar face). An `Edge`
+exposes `.kind`, `.length`, `.circle_center`, and `.circle_radius`. A `Vertex` exposes its XYZ
 position via `.point`.
 
 | Signature | Behavior |
@@ -117,12 +121,13 @@ position via `.point`.
 | --- | --- |
 | `bounds(shape: Shape) -> Bounds` | Returns the world-axis-aligned bounding box. |
 | `volume(shape: Shape, *, relative_tolerance: float = 1e-9) -> float` | Returns enclosed volume. The requested relative integration tolerance is positive and dimensionless. |
-| `import_step(path: str \| PathLike[str], /) -> Shape` | Reads closed STEP solids, places their occurrences in world coordinates, and unites them as a single shape. |
+| `import_step(path: str \| PathLike[str], /) -> Shape` | Reads a STEP file and merges all closed solids into one shape, placed in world coordinates. Part identity is not kept. |
 | `export_step(shape: Shape, path: str \| PathLike[str], *, name: str = "Part") -> None` | Writes STEP AP242, using `name` as the part label. Overwrites an existing file. |
 
-Invalid argument values can raise `ValueError`. A subtraction with `-` that
-removes all material raises `EmptyResultError`, a `ValueError` subclass. Kernel failures raise
-`KernelError` (a `RuntimeError` subclass). Filesystem errors from STEP exchange
+Invalid argument values can raise `ValueError`. The operators `-` and `&`
+raise `EmptyResultError`, a `ValueError` subclass, when their result would be
+empty; `difference()` and `intersection()` return `None` instead.
+Kernel failures raise `KernelError` (a `RuntimeError` subclass). Filesystem errors from STEP exchange
 propagate as `OSError` subclasses.
 
 

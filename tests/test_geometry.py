@@ -139,3 +139,25 @@ def test_invalid_extrusion_height(height: float) -> None:
     profile = sf.profile(sf.polygon([(0, 0), (1, 0), (0, 1)]))
     with pytest.raises(ValueError, match="distance"):
         sf.extrude(profile, distance=height)
+
+
+def test_bounds_named_fields_size_and_center() -> None:
+    result = sf.bounds(sf.box(size_x=10, size_y=20, size_z=4))
+    lower, upper = result
+    assert (lower, upper) == (result.min, result.max) == ((-5, -10, 0), (5, 10, 4))
+    assert result.size == (10, 20, 4)
+    assert result.center == (0, 0, 2)
+
+
+def test_diameter_alternative_to_radius() -> None:
+    by_radius = sf.cylinder(radius=2, height=3)
+    by_diameter = sf.cylinder(diameter=4, height=3)
+    assert sf.volume(by_diameter) == pytest.approx(sf.volume(by_radius))
+    assert sf.circle(diameter=4).end == sf.circle(radius=2).end == (2, 0)
+
+    with pytest.raises(ValueError, match="exactly one"):
+        sf.cylinder(radius=2, diameter=4, height=3)  # type: ignore[call-overload]
+    with pytest.raises(ValueError, match="exactly one"):
+        sf.circle()  # type: ignore[call-overload]
+    with pytest.raises(ValueError, match="diameter"):
+        sf.cylinder(diameter=-1, height=3)

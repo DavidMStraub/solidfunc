@@ -204,3 +204,34 @@ def test_topology_references_compare_by_entity() -> None:
     # The shared edge is listed twice; it is blended once.
     rounded = sf.fillet(block, [*sf.edges(top), *sf.edges(side)], radius=1)
     assert 0 < sf.volume(rounded) < 1000
+
+
+def test_place_carries_world_xy_onto_a_face() -> None:
+    block = sf.box(size_x=10, size_y=20, size_z=4)
+    stud = sf.cylinder(diameter=4, height=3)
+
+    top = max(sf.faces(block), key=lambda face: face.centroid[2])
+    on_top = sf.place(stud, sf.Plane.from_face(top).offset(x=3))
+    lower, upper = sf.bounds(on_top)
+    assert lower == pytest.approx((1, -2, 4))
+    assert upper == pytest.approx((5, 2, 7))
+
+    # On a side face, the stud's axis follows the outward normal (+X).
+    side = max(sf.faces(block), key=lambda face: face.centroid[0])
+    lower, upper = sf.bounds(sf.place(stud, sf.Plane.from_face(side)))
+    assert lower == pytest.approx((5, -2, 0))
+    assert upper == pytest.approx((8, 2, 4))
+
+    assert sf.volume(block + on_top) == pytest.approx(800 + 12 * pi)
+    assert sf.bounds(stud).center == pytest.approx((0, 0, 1.5))
+
+
+def test_plane_offset_moves_along_its_own_axes() -> None:
+    plane = sf.Plane.from_normal(origin=(1, 2, 3), normal=(1, 0, 0), x_dir=(0, 1, 0))
+    moved = plane.offset(x=1, y=2, z=3)
+    assert moved.origin == pytest.approx((4, 3, 5))
+    assert (moved.x_dir, moved.y_dir, moved.normal) == (
+        plane.x_dir,
+        plane.y_dir,
+        plane.normal,
+    )

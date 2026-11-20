@@ -1,7 +1,7 @@
 """Analytical boolean results, empty sets, and operand preservation."""
 
 from collections.abc import Callable
-from operator import add, sub
+from operator import add, and_, sub
 
 import pytest
 import solidfunc as sf
@@ -17,6 +17,7 @@ Boolean = Callable[[sf.Shape, sf.Shape], sf.Shape | None]
         (sf.difference, 12, (-2, -1.5, 0), (0, 1.5, 2)),
         (add, 36, (-2, -1.5, 0), (4, 1.5, 2)),
         (sub, 12, (-2, -1.5, 0), (0, 1.5, 2)),
+        (and_, 12, (0, -1.5, 0), (2, 1.5, 2)),
     ],
 )
 def test_overlapping_boxes(
@@ -71,7 +72,7 @@ def test_chained_operators() -> None:
     assert sf.volume(shifted) == pytest.approx(24)
 
 
-@pytest.mark.parametrize("operation", [add, sub])
+@pytest.mark.parametrize("operation", [add, sub, and_])
 def test_operators_reject_unsupported_operands(
     operation: Callable[..., object],
 ) -> None:
@@ -135,3 +136,25 @@ def test_subtraction_operator_raises_when_nothing_remains() -> None:
         block - block
     assert issubclass(sf.EmptyResultError, ValueError)
     assert sf.volume(block) == pytest.approx(24)
+
+
+def test_union_of_many_shapes_in_one_call() -> None:
+    block = sf.box(size_x=4, size_y=3, size_z=2)
+    parts = [sf.translate(block, x=10 * i) for i in range(5)]
+
+    combined = sf.union(*parts)
+    assert sf.volume(combined) == pytest.approx(5 * 24)
+    assert sf.bounds(combined) == ((-2, -1.5, 0), (42, 1.5, 2))
+    assert all(sf.volume(part) == pytest.approx(24) for part in parts)
+
+    single = sf.union(block)
+    assert single is not block
+    assert sf.volume(single) == pytest.approx(24)
+
+
+def test_intersection_operator_raises_when_nothing_is_shared() -> None:
+    block = sf.box(size_x=4, size_y=3, size_z=2)
+    apart = sf.translate(block, x=10)
+    with pytest.raises(sf.EmptyResultError, match="no shared material"):
+        block & apart
+    assert sf.intersection(block, apart) is None

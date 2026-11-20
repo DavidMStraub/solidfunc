@@ -3,13 +3,31 @@
 from math import isfinite, radians
 from os import PathLike
 from pathlib import Path
-from typing import TypeAlias
+from typing import NamedTuple, TypeAlias, overload
 
 from . import _core
 from ._core import Shape
 
 Point3D: TypeAlias = tuple[float, float, float]
-Bounds: TypeAlias = tuple[Point3D, Point3D]
+
+
+class Bounds(NamedTuple):
+    """World-axis-aligned bounds in millimetres; unpacks as ``(min, max)``."""
+
+    min: Point3D
+    max: Point3D
+
+    @property
+    def size(self) -> Point3D:
+        """Return the extent along X, Y, and Z."""
+        (x0, y0, z0), (x1, y1, z1) = self
+        return x1 - x0, y1 - y0, z1 - z0
+
+    @property
+    def center(self) -> Point3D:
+        """Return the midpoint of the box."""
+        (x0, y0, z0), (x1, y1, z1) = self
+        return (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2
 
 
 def _positive(name: str, value: float) -> None:
@@ -30,32 +48,54 @@ def box(*, size_x: float, size_y: float, size_z: float) -> Shape:
     return _core._box((-size_x / 2, -size_y / 2, 0.0), (size_x, size_y, size_z))
 
 
-def cylinder(*, radius: float, height: float) -> Shape:
+def _radius(radius: float | None, diameter: float | None) -> float:
+    if (radius is None) == (diameter is None):
+        raise ValueError("supply exactly one of radius and diameter")
+    if radius is None:
+        assert diameter is not None
+        _positive("diameter", diameter)
+        return diameter / 2
+    _positive("radius", radius)
+    return radius
+
+
+@overload
+def cylinder(*, radius: float, height: float) -> Shape: ...
+@overload
+def cylinder(*, diameter: float, height: float) -> Shape: ...
+def cylinder(
+    *, radius: float | None = None, diameter: float | None = None, height: float
+) -> Shape:
     """Construct a cylinder on the Z axis with its base centre at the origin.
 
-    ``radius`` is the radius of each circular face and ``height`` is the
-    distance between them, both positive and finite, in millimetres. The
-    cylinder rises from z = 0 to ``height``. Place it with ``translate`` or
-    ``place``.
+    Give exactly one of ``radius`` or ``diameter`` for the circular faces.
+    ``height`` is the distance between them. All are positive and finite,
+    in millimetres. The cylinder rises from z = 0 to ``height``. Place it
+    with ``translate`` or ``place``.
     """
-    _positive("radius", radius)
+    size = _radius(radius, diameter)
     _positive("height", height)
-    return _core._cylinder((0.0, 0.0, 0.0), radius, height)
+    return _core._cylinder((0.0, 0.0, 0.0), size, height)
 
 
-def union(left: Shape, right: Shape, /) -> Shape:
-    """Return the material in either operand, preserving both inputs.
+def union(shape: Shape, /, *shapes: Shape) -> Shape:
+    """Return the material in any operand, preserving all inputs.
 
-    Disconnected regions are kept together in one opaque geometry value.
+    Accepts one or more shapes, so ``union(*parts)`` combines a whole list
+    in one kernel operation. Disconnected regions are kept together in one
+    opaque geometry value. ``left + right`` unites two shapes.
     """
-    return _core._union(left, right)
+    if len(shapes) == 1:
+        return _core._union(shape, shapes[0])
+    return _core._union_all([shape, *shapes])
 
 
 def intersection(left: Shape, right: Shape, /) -> Shape | None:
     """Return the solid material shared by ``left`` and ``right``.
 
     Return ``None`` when there is no shared solid material. Both inputs are
-    preserved.
+    preserved. The ``&`` operator does the same but raises
+    ``EmptyResultError`` instead of returning ``None``.
     """
     return _core._intersection(left, right)
 
@@ -123,11 +163,12 @@ def mirror(
 def bounds(shape: Shape) -> Bounds:
     """Return the world-axis-aligned bounds of ``shape`` in millimetres.
 
-    The result is ``(minimum, maximum)``, with each corner an (x, y, z) tuple.
+    The result unpacks as ``(min, max)``, each corner an (x, y, z) tuple, and
+    also provides ``size`` and ``center``.
     """
     # PyO3 converts Rust arrays to lists; expose tuples consistently in Python.
     lower, upper = _core._bounds(shape)
-    return (lower[0], lower[1], lower[2]), (upper[0], upper[1], upper[2])
+    return Bounds((lower[0], lower[1], lower[2]), (upper[0], upper[1], upper[2]))
 
 
 def export_step(shape: Shape, path: str | PathLike[str], *, name: str = "Part") -> None:
@@ -144,10 +185,11 @@ def export_step(shape: Shape, path: str | PathLike[str], *, name: str = "Part") 
 
 
 def import_step(path: str | PathLike[str], /) -> Shape:
-    """Read STEP solids as a single shape in world millimetres.
+    """Read a STEP file and merge all of its solids into one shape.
 
-    ``path`` is a string or path object. Multiple solid occurrences are
-    placed and united. Reader or conversion failures raise ``KernelError``.
-    Filesystem errors propagate as ``OSError`` subclasses.
+    Part identity is not kept: every solid occurrence is placed in world
+    millimetres and united. ``path`` is a string or path object. Reader or
+    conversion failures raise ``KernelError``. Filesystem errors propagate
+    as ``OSError`` subclasses.
     """
     return _core._import_step(Path(path).read_bytes().decode("latin-1"))

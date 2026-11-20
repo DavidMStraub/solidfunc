@@ -33,7 +33,7 @@ from ._core import (
     Shape,
     Vertex,
 )
-from ._frame import Plane
+from ._frame import Plane, place
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
@@ -91,6 +91,7 @@ __all__ = [
     "loft",
     "mirror",
     "path",
+    "place",
     "planar",
     "polygon",
     "polyline",
