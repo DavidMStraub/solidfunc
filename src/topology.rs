@@ -109,20 +109,20 @@ impl Face {
 
     /// Area centroid in world millimetres.
     #[getter]
-    fn center(&self, py: Python<'_>) -> PyResult<Point> {
+    fn centroid(&self, py: Python<'_>) -> PyResult<Point> {
         let shape = self.owner.get();
         py.detach(|| shape.body.face_centroid(&self.order, self.index, 1e-9))
             .map(|result| result.centroid.into())
-            .map_err(|error| kernel_error("face center", error))
+            .map_err(|error| kernel_error("face centroid", error))
     }
 
     /// Outward unit normal for a planar face, or None for a curved face.
     #[getter]
-    fn normal(&self, py: Python<'_>) -> PyResult<Option<Point>> {
+    fn planar_normal(&self, py: Python<'_>) -> PyResult<Option<Point>> {
         let shape = self.owner.get();
         py.detach(|| shape.body.face_plane_normal(&self.order, self.index))
             .map(|result| result.map(|normal| normal.value.into()))
-            .map_err(|error| kernel_error("face normal", error))
+            .map_err(|error| kernel_error("face planar normal", error))
     }
 }
 

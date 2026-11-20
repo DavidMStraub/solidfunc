@@ -32,7 +32,7 @@ def test_face_plane_and_fillet_from_the_hole_rim() -> None:
     drilled = plate - sf.translate(sf.cylinder(radius=4, height=7), z=-1)
     assert drilled is not None
 
-    (top,) = [face for face in sf.faces(drilled) if face.normal == (0, 0, 1)]
+    (top,) = [face for face in sf.faces(drilled) if face.planar_normal == (0, 0, 1)]
     frame = sf.Plane.from_face(top)
     assert frame.origin == pytest.approx((0, 0, 5))
     assert frame.normal == (0, 0, 1)
@@ -64,7 +64,7 @@ def test_round_to_rectangular_loft() -> None:
     rectangle = sf.profile(sf.rectangle(size_x=60, size_y=40))
     duct = sf.loft(
         [(circle, sf.Plane()), (rectangle, sf.Plane(origin=(0, 0, 80)))],
-        interpolation_deg=1,
+        degree=1,
     )
     lower, upper = sf.bounds(duct)
     assert lower == pytest.approx((-30, -25, 0))
@@ -90,7 +90,7 @@ def test_mitred_polyline_sweep() -> None:
 
 
 def test_spline_path_evaluation_and_spatial_loft() -> None:
-    spine = sf.spline([(0, 0, 0), (1, 2, 0), (3, 3, 2), (5, 5, 5)])
+    spine = sf.spline3d([(0, 0, 0), (1, 2, 0), (3, 3, 2), (5, 5, 5)])
     assert spine.point_at(0) == (0, 0, 0)
     assert spine.point_at(1) == pytest.approx((5, 5, 5))
     assert sum(component**2 for component in spine.tangent_at(0.5)) == pytest.approx(1)
@@ -98,7 +98,7 @@ def test_spline_path_evaluation_and_spatial_loft() -> None:
         spine.point_at(-1)
 
     outline = [(2, 0), (0, 1), (-2, 0), (0, -1), (2, 0)]
-    sections = [sf.spline([(x, y, z) for x, y in outline]) for z in (0, 5)]
+    sections = [sf.spline3d([(x, y, z) for x, y in outline]) for z in (0, 5)]
     assert all(section.is_closed for section in sections)
     assert sf.volume(sf.loft(sections)) > 0
 
@@ -174,7 +174,7 @@ def test_chamfer_uses_equal_setbacks_and_preserves_the_source() -> None:
 def test_topology_traversal() -> None:
     box = sf.box(size_x=2, size_y=3, size_z=4)
     assert len(sf.vertices(box)) == 8
-    top = next(face for face in sf.faces(box) if face.normal == (0, 0, 1))
+    top = next(face for face in sf.faces(box) if face.planar_normal == (0, 0, 1))
     corners = {vertex.point for vertex in sf.vertices(top)}
     assert corners == {(-1, -1.5, 4), (1, -1.5, 4), (-1, 1.5, 4), (1, 1.5, 4)}
     for edge in sf.edges(top):
@@ -182,7 +182,7 @@ def test_topology_traversal() -> None:
         assert len(endpoints) == 2 and endpoints <= corners
         adjacent = sf.faces(edge)
         assert len(adjacent) == 2
-        assert any(face.normal == (0, 0, 1) for face in adjacent)
+        assert any(face.planar_normal == (0, 0, 1) for face in adjacent)
 
     cylinder = sf.cylinder(radius=2, height=4)
     circular = next(edge for edge in sf.edges(cylinder) if edge.kind == "circle")
@@ -192,8 +192,8 @@ def test_topology_traversal() -> None:
 
 def test_topology_references_compare_by_entity() -> None:
     block = sf.box(size_x=10, size_y=10, size_z=10)
-    top = max(sf.faces(block), key=lambda face: face.center[2])
-    side = max(sf.faces(block), key=lambda face: face.center[0])
+    top = max(sf.faces(block), key=lambda face: face.centroid[2])
+    side = max(sf.faces(block), key=lambda face: face.centroid[0])
 
     assert sf.faces(block)[0] == sf.faces(block)[0]
     assert all(edge in sf.edges(block) for edge in sf.edges(top))

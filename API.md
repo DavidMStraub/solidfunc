@@ -7,6 +7,11 @@ available at the package root. The planar functions are also available from
 Lengths and coordinates are in millimetres, volumes are in cubic millimetres,
 and angles are in degrees. Geometry operations preserve their inputs.
 
+Naming conventions: planar constructors have no suffix (`line`, `polyline`,
+`circle`), and spatial constructors that take world XYZ points end in `3d`
+(`polyline3d`, `spline3d`). A `_deg` suffix always names an angle in degrees;
+a polynomial degree is spelled `degree`.
+
 `Point2D` and `Point3D` are coordinate tuple aliases. `Bounds` is a pair of
 XYZ tuples. Instantiate `Plane` directly or use one of its factories. `Mesh`
 is a dataclass that can also be constructed directly. The native geometry
@@ -50,7 +55,7 @@ and `.tangent_at(parameter)`.
 | Signature | Behavior |
 | --- | --- |
 | `polyline3d(points: Iterable[Point3D], /) -> Path3D` | Joins two or more world points with straight segments. |
-| `spline(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D` | Interpolates a clamped B-spline through world points in traversal order. |
+| `spline3d(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D` | Interpolates a clamped B-spline through world points in traversal order. |
 
 Path evaluation uses a dimensionless parameter on [0, 1]. Each polyline
 segment covers an equal share of the interval. Splines use their normalized
@@ -69,7 +74,7 @@ Primitives share one convention: centred in local XY with the base at
 z = 0. Position them with `translate`, `rotate`, or `mirror`.
 | `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
 | `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
-| `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, interpolation_deg: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `interpolation_deg` is a polynomial degree. |
+| `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, degree: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `degree` is the polynomial degree in the direction through the sections. |
 | `sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape` | Sweeps a profile, including any holes, from the start of the path. Sharp polyline corners are mitred. |
 
 ## Transformations and booleans
@@ -93,8 +98,8 @@ compare equal and hash alike when they name the same entity of the same
 shape object, so sets and `in` work across queries. `fillet()` and
 `chamfer()` treat repeated references to one edge as a single edge.
 
-A `Face` exposes its centroid through `.center` and its outward unit normal
-through `.normal` (`None` for a nonplanar face). An `Edge` exposes `.kind`,
+A `Face` exposes its area centroid through `.centroid` and its outward unit
+normal through `.planar_normal` (`None` for a nonplanar face). An `Edge` exposes `.kind`,
 `.length`, `.circle_center`, and `.circle_radius`. A `Vertex` exposes its XYZ
 position via `.point`.
 

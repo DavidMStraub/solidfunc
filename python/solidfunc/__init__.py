@@ -26,7 +26,7 @@ from ._api import (
 from ._core import Edge, Face, KernelError, Path3D, Profile, Shape, Vertex
 from ._frame import Plane
 from ._mesh import Mesh, tessellate
-from ._modeling import loft, polyline3d, revolve, spline, sweep
+from ._modeling import loft, polyline3d, revolve, spline3d, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
 from .planar import (
     Boundary,
@@ -89,7 +89,7 @@ __all__ = [
     "rectangle",
     "revolve",
     "rotate",
-    "spline",
+    "spline3d",
     "sweep",
     "tessellate",
     "translate",

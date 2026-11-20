@@ -28,9 +28,9 @@ def edges(scope: Shape | Face, /) -> tuple[Edge, ...]:
 def faces(scope: Shape | Edge, /) -> tuple[Face, ...]:
     """Return read-only faces of a shape or the unique faces incident to an edge.
 
-    ``center`` is the area centroid in world millimetres. ``normal``
-    is the outward unit vector for a planar face and ``None`` for a
-    nonplanar face. References belong to this exact shape instance.
+    ``centroid`` is the area centroid in world millimetres.
+    ``planar_normal`` is the outward unit vector for a planar face and
+    ``None`` for a nonplanar face. References belong to this exact shape instance.
     """
     if isinstance(scope, Edge):
         return _core._edge_faces(scope)

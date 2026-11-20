@@ -40,7 +40,7 @@ def loft(
     sections: Iterable[tuple[Profile, Plane]] | Iterable[Path3D],
     /,
     *,
-    interpolation_deg: int = 1,
+    degree: int = 1,
 ) -> Shape:
     """Return a capped solid through successive sections.
 
@@ -48,7 +48,8 @@ def loft(
     use automatic boundary matching. Spatial paths must already have
     corresponding curves in the same traversal order, with corresponding
     starts. Each section must enclose one planar region without holes.
-    ``interpolation_deg`` is the polynomial degree across sections (1 to 3).
+    ``degree`` is the polynomial degree in the direction through the
+    sections (1 to 3).
     Supply at least two sections and more sections than the degree.
     """
     profiles: list[tuple[Profile, tuple[Point3D, Point3D, Point3D]]] = []
@@ -63,8 +64,8 @@ def loft(
     if paths and profiles:
         raise ValueError("loft sections must be all profile-plane pairs or all paths")
     if paths:
-        return _core._loft_paths(paths, interpolation_deg)
-    return _core._loft(profiles, interpolation_deg)
+        return _core._loft_paths(paths, degree)
+    return _core._loft(profiles, degree)
 
 
 def polyline3d(points: Iterable[Point3D], /) -> Path3D:
@@ -76,7 +77,7 @@ def polyline3d(points: Iterable[Point3D], /) -> Path3D:
     return _core._polyline3d(list(points))
 
 
-def spline(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D:
+def spline3d(points: Iterable[Point3D], /, *, degree: int = 3) -> Path3D:
     """Interpolate a spatial B-spline through world-space points in millimetres.
 
     ``degree`` is the requested polynomial degree. Supply more distinct

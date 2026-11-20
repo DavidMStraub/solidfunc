@@ -41,7 +41,7 @@ fn outer(profile: &Profile) -> PyResult<&[Seg2]> {
     Ok(&profile.region.outer.segs)
 }
 
-/// A connected spatial path. Construct it with polyline3d or spline.
+/// A connected spatial path. Construct it with polyline3d or spline3d.
 #[pyclass(frozen, module = "solidfunc")]
 struct Path3D {
     curves: Vec<Curve>,

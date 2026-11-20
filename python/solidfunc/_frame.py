@@ -88,10 +88,10 @@ class Plane:
         A nonplanar face or a direction parallel to the normal raises
         ``ValueError``.
         """
-        normal = face.normal
+        normal = face.planar_normal
         if normal is None:
             raise ValueError("Plane.from_face requires a planar face")
-        return cls.from_normal(origin=face.center, normal=normal, x_dir=x_dir)
+        return cls.from_normal(origin=face.centroid, normal=normal, x_dir=x_dir)
 
     @property
     def normal(self) -> Point3D:
