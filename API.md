@@ -102,10 +102,27 @@ compare equal and hash alike when they name the same entity of the same
 shape object, so sets and `in` work across queries. `fillet()` and
 `chamfer()` treat repeated references to one edge as a single edge.
 
-A `Face` exposes its area centroid through `.centroid` and its outward unit
-normal through `.planar_normal` (`None` for a nonplanar face). An `Edge`
-exposes `.kind`, `.length`, `.circle_center`, and `.circle_radius`. A `Vertex` exposes its XYZ
-position via `.point`.
+Topology references expose read-only data for filtering with ordinary
+Python, for example
+`[e for e in edges(plate) if e.line_direction and abs(e.line_direction[2]) == 1]`
+for the edges parallel to Z.
+
+| Attribute | Value |
+| --- | --- |
+| `Face.kind` | `FaceKind`: `"plane"`, `"cylinder"`, `"cone"`, `"sphere"`, `"torus"`, `"spline"`, `"revolution"`, or `"blend"`. A round on a straight edge is a `"cylinder"`; the corner of three rounds is a `"sphere"`. Surfaces from `revolve`, `loft`, and `sweep` are often stored as `"spline"`. |
+| `Face.area` | Area in square millimetres. |
+| `Face.centroid` | Area centroid. |
+| `Face.planar_normal` | Outward unit normal of a planar face, else `None`. |
+| `Edge.kind` | `EdgeKind`: `"line"`, `"circle"`, `"ellipse"`, `"polyline"`, `"spline"`, or `"intersection"`. |
+| `Edge.start`, `Edge.end` | Endpoints in the edge's direction; equal for a closed edge. |
+| `Edge.line_direction` | Unit vector from `start` to `end` for a line edge, else `None`. Its sign follows the edge's direction; axis-aligned values are exact. |
+| `Edge.circle_center`, `Edge.circle_radius` | For circles and arcs, else `None`. |
+| `Edge.length` | Trimmed length in millimetres. |
+| `Vertex.point` | XYZ position. |
+
+`EdgeKind` and `FaceKind` are `Literal` string types: kinds are plain strings
+at runtime, and a type checker rejects a misspelled comparison such as
+`face.kind == "cylindre"`.
 
 | Signature | Behavior |
 | --- | --- |

@@ -2,6 +2,8 @@
 
 from typing import TypeAlias, final
 
+from ._kinds import EdgeKind, FaceKind
+
 _Point3D: TypeAlias = tuple[float, float, float]
 _Frame: TypeAlias = tuple[_Point3D, _Point3D, _Point3D]
 
@@ -89,7 +91,13 @@ def _step_text(shape: Shape, file_name: str, name: str) -> str: ...
 @final
 class Edge:
     @property
-    def kind(self) -> str: ...
+    def kind(self) -> EdgeKind: ...
+    @property
+    def start(self) -> _Point3D: ...
+    @property
+    def end(self) -> _Point3D: ...
+    @property
+    def line_direction(self) -> _Point3D | None: ...
     @property
     def circle_center(self) -> _Point3D | None: ...
     @property
@@ -99,6 +107,10 @@ class Edge:
 
 @final
 class Face:
+    @property
+    def kind(self) -> FaceKind: ...
+    @property
+    def area(self) -> float: ...
     @property
     def centroid(self) -> _Point3D: ...
     @property

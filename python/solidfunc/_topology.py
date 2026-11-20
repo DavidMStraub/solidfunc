@@ -13,12 +13,17 @@ def edges(scope: Shape | Face, /) -> tuple[Edge, ...]:
     A face query includes outer and hole boundaries and returns each
     edge once, including seams shared by two uses on the same face.
 
-    ``kind`` names the underlying curve (for example, ``"line"`` or
-    ``"circle"``). Circular edges, including arcs, provide
-    ``circle_center`` and ``circle_radius`` in world millimetres.
-    Other edges return ``None`` for these attributes. ``length`` is the
-    trimmed edge length in millimetres. References belong to this
-    exact shape instance.
+    ``kind`` names how the edge's curve is stored (an ``EdgeKind`` such as
+    ``"line"`` or ``"circle"``). ``start`` and ``end`` are the edge's
+    endpoints in world millimetres, in the edge's own direction; they are
+    equal for a closed edge such as a full circle. Line edges provide
+    ``line_direction``, the unit vector from ``start`` to ``end``; its sign
+    follows the edge's direction, so test ``abs(d[2]) == 1`` for an edge
+    parallel to Z. Axis-aligned directions are exact. Circular edges,
+    including arcs, provide ``circle_center`` and ``circle_radius`` in world
+    millimetres. Kind-specific attributes are ``None`` for other edges.
+    ``length`` is the trimmed edge length in millimetres. References
+    belong to this exact shape instance.
     """
     if isinstance(scope, Face):
         return _core._face_edges(scope)
@@ -28,9 +33,15 @@ def edges(scope: Shape | Face, /) -> tuple[Edge, ...]:
 def faces(scope: Shape | Edge, /) -> tuple[Face, ...]:
     """Return read-only faces of a shape or the unique faces incident to an edge.
 
-    ``centroid`` is the area centroid in world millimetres.
-    ``planar_normal`` is the outward unit vector for a planar face and
-    ``None`` for a nonplanar face. References belong to this exact shape instance.
+    ``kind`` names how the face's surface is stored (a ``FaceKind`` such as
+    ``"plane"`` or ``"cylinder"``). A round on a straight edge reports
+    ``"cylinder"``, and the corner where three rounds meet reports
+    ``"sphere"``. Surfaces built by ``revolve``, ``loft``, or ``sweep`` are
+    often stored as ``"spline"`` even when their shape is a cone or sphere.
+    ``area`` is in square millimetres and ``centroid`` is the area centroid
+    in world millimetres. ``planar_normal`` is the outward unit vector for
+    a planar face and ``None`` for a nonplanar face. References belong to
+    this exact shape instance.
     """
     if isinstance(scope, Edge):
         return _core._edge_faces(scope)

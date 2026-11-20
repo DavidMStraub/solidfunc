@@ -2,6 +2,7 @@
 
 from math import pi
 from pathlib import Path
+from typing import get_args
 
 import pytest
 import solidfunc as sf
@@ -235,3 +236,71 @@ def test_plane_offset_moves_along_its_own_axes() -> None:
         plane.y_dir,
         plane.normal,
     )
+
+
+def test_edge_endpoints_and_line_direction() -> None:
+    block = sf.box(size_x=10, size_y=10, size_z=4)
+    vertical = [
+        edge
+        for edge in sf.edges(block)
+        if edge.line_direction is not None and abs(edge.line_direction[2]) == 1
+    ]
+    assert len(vertical) == 4
+    for edge in vertical:
+        assert edge.kind == "line"
+        assert edge.start[:2] == edge.end[:2]
+        assert {edge.start[2], edge.end[2]} == {0, 4}
+        assert {vertex.point for vertex in sf.vertices(edge)} == {edge.start, edge.end}
+
+    rim = next(
+        edge
+        for edge in sf.edges(sf.cylinder(radius=3, height=2))
+        if edge.kind == "circle"
+    )
+    assert rim.start == rim.end
+    assert rim.line_direction is None
+
+
+def test_face_kind_and_area() -> None:
+    block = sf.box(size_x=10, size_y=10, size_z=4)
+    assert {face.kind for face in sf.faces(block)} == {"plane"}
+    top = max(sf.faces(block), key=lambda face: face.centroid[2])
+    assert top.area == pytest.approx(100)
+
+    vertical = [
+        e for e in sf.edges(block) if e.line_direction and abs(e.line_direction[2]) == 1
+    ]
+    rounded = sf.fillet(block, vertical, radius=1)
+    rounds = [face for face in sf.faces(rounded) if face.kind == "cylinder"]
+    assert len(rounds) == 4
+    assert all(face.area == pytest.approx(pi * 1 * 4 / 2) for face in rounds)
+
+    corners = sf.fillet(block, sf.edges(block), radius=1)
+    assert sum(face.kind == "sphere" for face in sf.faces(corners)) == 8
+
+    ring = sf.revolve(
+        sf.profile(sf.circle(radius=1, center=(4, 0))),
+        plane=sf.Plane(y_dir=(0, 0, 1)),
+        axis_direction=(0, 0, 1),
+    )
+    assert [face.kind for face in sf.faces(ring)] == ["torus"]
+
+
+def test_reported_kinds_match_their_literal_types() -> None:
+    block = sf.box(size_x=4, size_y=4, size_z=4)
+    shapes = [
+        sf.fillet(block, sf.edges(block), radius=0.5),
+        sf.cylinder(radius=1, height=1),
+        sf.loft(
+            [
+                (sf.profile(sf.circle(radius=2)), sf.Plane()),
+                (
+                    sf.profile(sf.rectangle(size_x=4, size_y=3)),
+                    sf.Plane(origin=(0, 0, 5)),
+                ),
+            ]
+        ),
+    ]
+    for shape in shapes:
+        assert {face.kind for face in sf.faces(shape)} <= set(get_args(sf.FaceKind))
+        assert {edge.kind for edge in sf.edges(shape)} <= set(get_args(sf.EdgeKind))

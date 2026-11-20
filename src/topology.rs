@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 use solidcore_ops::blend::{blend_ordered, Blend, BlendOptions, Corners};
 use solidcore_ops::Order;
-use solidcore_record::brep::{Brep, Curve, Loop};
+use solidcore_record::brep::{Brep, Curve, Loop, Surface};
 
 use crate::{kernel_error, Shape};
 
@@ -26,6 +26,12 @@ struct Edge {
     circle_center: Option<Point>,
     #[pyo3(get)]
     circle_radius: Option<f64>,
+    #[pyo3(get)]
+    line_direction: Option<Point>,
+    #[pyo3(get)]
+    start: Point,
+    #[pyo3(get)]
+    end: Point,
 }
 
 fn owner_key(owner: &Py<Shape>) -> usize {
@@ -44,15 +50,18 @@ impl Edge {
         (owner_key(&self.owner), self.order.edges[self.index].index())
     }
 
-    fn new(owner: Py<Shape>, order: Arc<Order>, index: usize, curve: Curve) -> Self {
-        let (kind, circle_center, circle_radius) = match curve {
+    fn new(owner: Py<Shape>, order: Arc<Order>, index: usize, record: &Brep) -> Self {
+        let edge = &record.edges[index];
+        let [start, end] = edge.vertices.map(|v| record.vertices[v as usize].point);
+        let (kind, circle_center, circle_radius) = match &edge.curve {
             Curve::Line { .. } => ("line", None, None),
-            Curve::Circle { frame, radius } => ("circle", Some(frame.origin.into()), Some(radius)),
+            Curve::Circle { frame, radius } => ("circle", Some(frame.origin.into()), Some(*radius)),
             Curve::Ellipse { .. } => ("ellipse", None, None),
             Curve::Polyline { .. } => ("polyline", None, None),
             Curve::Spline { .. } | Curve::RationalSpline { .. } => ("spline", None, None),
             Curve::SurfaceIntersection { .. } => ("intersection", None, None),
         };
+        let line_direction = (kind == "line").then(|| unit_between(start, end)).flatten();
         Self {
             owner,
             order,
@@ -60,7 +69,35 @@ impl Edge {
             kind,
             circle_center,
             circle_radius,
+            line_direction,
+            start: start.into(),
+            end: end.into(),
         }
+    }
+}
+
+/// The unit vector from `a` to `b`. Axis-aligned results are exact: each component is divided
+/// by the same length, so an edge along Z gives exactly (0, 0, ±1).
+fn unit_between(a: [f64; 3], b: [f64; 3]) -> Option<Point> {
+    let d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    let length = d[0].hypot(d[1]).hypot(d[2]);
+    (length > 0.0).then(|| (d[0] / length, d[1] / length, d[2] / length))
+}
+
+fn face_kind(surface: &Surface) -> &'static str {
+    match surface {
+        Surface::Plane { .. } | Surface::PlaneThrough { .. } => "plane",
+        // SMLib stores a round on a straight edge as a cone of half angle 0. The record keeps a
+        // true cone's half angle at 1e-12 or more, so anything flatter is a cylinder.
+        Surface::Cylinder { .. } => "cylinder",
+        Surface::Cone { half_angle, .. } if half_angle.abs() < 1e-12 => "cylinder",
+        Surface::Cone { .. } => "cone",
+        // A ball patch is the spherical corner where three rounds meet.
+        Surface::Sphere { .. } | Surface::BallPatch { .. } => "sphere",
+        Surface::Torus { .. } => "torus",
+        Surface::Spline { .. } | Surface::RationalSpline { .. } => "spline",
+        Surface::PlacedRevolution { .. } => "revolution",
+        Surface::Blend { .. } => "blend",
     }
 }
 
@@ -89,9 +126,20 @@ struct Face {
     owner: Py<Shape>,
     order: Arc<Order>,
     index: usize,
+    #[pyo3(get)]
+    kind: &'static str,
 }
 
 impl Face {
+    fn new(owner: Py<Shape>, order: Arc<Order>, index: usize, record: &Brep) -> Self {
+        Self {
+            owner,
+            order,
+            index,
+            kind: face_kind(&record.faces[index].surface),
+        }
+    }
+
     fn key(&self) -> (usize, u32) {
         (owner_key(&self.owner), self.order.faces[self.index].index())
     }
@@ -116,6 +164,14 @@ impl Face {
             .map_err(|error| kernel_error("face centroid", error))
     }
 
+    /// Face area in square millimetres.
+    #[getter]
+    fn area(&self, py: Python<'_>) -> PyResult<f64> {
+        let shape = self.owner.get();
+        py.detach(|| shape.body.face_area(&self.order, self.index, 1e-9))
+            .map_err(|error| kernel_error("face area", error))
+    }
+
     /// Outward unit normal for a planar face, or None for a curved face.
     #[getter]
     fn planar_normal(&self, py: Python<'_>) -> PyResult<Option<Point>> {
@@ -134,9 +190,8 @@ fn _edges<'py>(py: Python<'py>, shape: Py<Shape>) -> PyResult<Bound<'py, PyTuple
     let order = Arc::new(order);
     PyTuple::new(
         py,
-        record.edges.into_iter().enumerate().map(|(index, edge)| {
-            Edge::new(shape.clone_ref(py), Arc::clone(&order), index, edge.curve)
-        }),
+        (0..record.edges.len())
+            .map(|index| Edge::new(shape.clone_ref(py), Arc::clone(&order), index, &record)),
     )
 }
 
@@ -160,36 +215,23 @@ fn _face_edges<'py>(py: Python<'py>, face: &Face) -> PyResult<Bound<'py, PyTuple
         })
         .map_err(|error| kernel_error("edges", error))?;
 
-    let boundary_edges: Vec<_> = record
-        .edges
+    let boundary_edges: Vec<_> = indices
         .into_iter()
-        .enumerate()
-        .filter(|(index, _)| indices.contains(index))
-        .map(|(index, edge)| {
-            Edge::new(
-                face.owner.clone_ref(py),
-                Arc::clone(&order),
-                index,
-                edge.curve,
-            )
-        })
+        .map(|index| Edge::new(face.owner.clone_ref(py), Arc::clone(&order), index, &record))
         .collect();
     PyTuple::new(py, boundary_edges)
 }
 
 #[pyfunction]
 fn _faces<'py>(py: Python<'py>, shape: Py<Shape>) -> PyResult<Bound<'py, PyTuple>> {
-    let (_, order) = py
+    let (record, order) = py
         .detach(|| shape.get().body.to_record())
         .map_err(|error| kernel_error("faces", error))?;
     let order = Arc::new(order);
     PyTuple::new(
         py,
-        (0..order.faces.len()).map(|index| Face {
-            owner: shape.clone_ref(py),
-            order: Arc::clone(&order),
-            index,
-        }),
+        (0..order.faces.len())
+            .map(|index| Face::new(shape.clone_ref(py), Arc::clone(&order), index, &record)),
     )
 }
 
@@ -254,7 +296,7 @@ fn vertex_refs<'py>(
 
 #[pyfunction]
 fn _edge_faces<'py>(py: Python<'py>, edge: &Edge) -> PyResult<Bound<'py, PyTuple>> {
-    let (order, indices) = py
+    let (record, order, indices) = py
         .detach(|| {
             let (record, order) = edge.owner.get().body.to_record()?;
             let index = record_index(&order.edges, &edge.order.edges, edge.index)?;
@@ -263,16 +305,14 @@ fn _edge_faces<'py>(py: Python<'py>, edge: &Edge) -> PyResult<Bound<'py, PyTuple
                 .iter()
                 .map(|usage| usage.face as usize)
                 .collect();
-            Ok((Arc::new(order), indices))
+            Ok((record, Arc::new(order), indices))
         })
         .map_err(|error| kernel_error("faces", error))?;
     PyTuple::new(
         py,
-        indices.into_iter().map(|index| Face {
-            owner: edge.owner.clone_ref(py),
-            order: Arc::clone(&order),
-            index,
-        }),
+        indices
+            .into_iter()
+            .map(|index| Face::new(edge.owner.clone_ref(py), Arc::clone(&order), index, &record)),
     )
 }
 

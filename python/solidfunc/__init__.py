@@ -34,6 +34,7 @@ from ._core import (
     Vertex,
 )
 from ._frame import Plane, place
+from ._kinds import EdgeKind, FaceKind
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
@@ -60,8 +61,10 @@ __all__ = [
     "Bounds",
     "Curve2D",
     "Edge",
+    "EdgeKind",
     "EmptyResultError",
     "Face",
+    "FaceKind",
     "KernelError",
     "Mesh",
     "Path2D",
