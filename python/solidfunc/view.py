@@ -51,7 +51,8 @@ def show(
     )
     try:
         plotter.set_background("#f4f6fa")
-        plotter.add_mesh(surface, color="#6fa0bc", specular=0.16)
+        # Shade with the kernel's vertex normals; flat shading shows every facet.
+        plotter.add_mesh(surface, color="#6fa0bc", specular=0.16, smooth_shading=True)
         if mesh.edge_polylines:
             points: list[Point3D] = []
             lines: list[int] = []
