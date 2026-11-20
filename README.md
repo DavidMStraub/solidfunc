@@ -121,7 +121,12 @@ are alphas, and the API can change between them.
 
 ## Development
 
-To build from source, install [uv](https://docs.astral.sh/uv/) and
+The repository includes a [dev container](https://containers.dev/) in
+`.devcontainer/` with the pinned Python and Rust toolchains, uv, and the
+OCP CAD Viewer extension. Opening the repository in it builds solidfunc
+and installs CadQuery for the STEP exchange tests.
+
+To build from source without it, install [uv](https://docs.astral.sh/uv/) and
 [Rust](https://rustup.rs/), then run from the cloned repository:
 
 ```sh
