@@ -49,6 +49,56 @@ impl Shape {
             )
         })
     }
+
+    /// Face and edge counts. Bounds and volume would cost a kernel computation.
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        let (record, _) = py
+            .detach(|| self.body.to_record())
+            .map_err(|error| kernel_error("repr", error))?;
+        Ok(format!(
+            "<Shape: {}, {}>",
+            repr_count(record.faces.len(), "face"),
+            repr_count(record.edges.len(), "edge")
+        ))
+    }
+
+    /// Notebook display, delegated to `solidfunc._display`.
+    #[pyo3(signature = (include=None, exclude=None))]
+    fn _repr_mimebundle_<'py>(
+        slf: &Bound<'py, Self>,
+        include: Option<Bound<'py, PyAny>>,
+        exclude: Option<Bound<'py, PyAny>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        slf.py()
+            .import("solidfunc._display")?
+            .call_method1("mimebundle", (slf, include, exclude))
+    }
+}
+
+/// A coordinate for a `__repr__`: at most four decimals, without trailing zeros or `-0`.
+fn repr_number(value: f64) -> String {
+    let text = format!("{value:.4}");
+    let text = text.trim_end_matches('0').trim_end_matches('.');
+    if text == "-0" {
+        "0".into()
+    } else {
+        text.into()
+    }
+}
+
+/// A point for a `__repr__`, such as `(10, 0, 2.5)`.
+fn repr_point(coordinates: &[f64]) -> String {
+    let parts: Vec<_> = coordinates.iter().copied().map(repr_number).collect();
+    format!("({})", parts.join(", "))
+}
+
+/// `"1 face"` or `"3 faces"`.
+fn repr_count(count: usize, noun: &str) -> String {
+    if count == 1 {
+        format!("1 {noun}")
+    } else {
+        format!("{count} {noun}s")
+    }
 }
 
 fn kernel_error(operation: &str, error: Error) -> PyErr {

@@ -1,5 +1,6 @@
 """Types for the private PyO3 extension."""
 
+from collections.abc import Container
 from typing import TypeAlias, final
 
 from ._kinds import EdgeKind, FaceKind
@@ -17,6 +18,11 @@ class Shape:
     def __add__(self, other: Shape, /) -> Shape: ...
     def __sub__(self, other: Shape, /) -> Shape: ...
     def __and__(self, other: Shape, /) -> Shape: ...
+    def _repr_mimebundle_(
+        self,
+        include: Container[str] | None = None,
+        exclude: Container[str] | None = None,
+    ) -> dict[str, str]: ...
 
 @final
 class Curve2D:

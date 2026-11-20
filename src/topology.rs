@@ -10,7 +10,7 @@ use solidcore_ops::blend::{blend_ordered, Blend, BlendOptions, Corners};
 use solidcore_ops::Order;
 use solidcore_record::brep::{Brep, Curve, Loop, Surface};
 
-use crate::{kernel_error, Shape};
+use crate::{kernel_error, repr_number, repr_point, Shape};
 
 type Point = (f64, f64, f64);
 
@@ -111,6 +111,19 @@ impl Edge {
         hash_key(self.key())
     }
 
+    fn __repr__(&self) -> String {
+        let radius = self
+            .circle_radius
+            .map_or_else(String::new, |r| format!(" r={}", repr_number(r)));
+        let (start, end) = (self.start, self.end);
+        format!(
+            "<Edge {}{radius}, {} to {}>",
+            self.kind,
+            repr_point(&[start.0, start.1, start.2]),
+            repr_point(&[end.0, end.1, end.2])
+        )
+    }
+
     /// Edge length in millimetres.
     #[getter]
     fn length(&self, py: Python<'_>) -> PyResult<f64> {
@@ -153,6 +166,14 @@ impl Face {
 
     fn __hash__(&self) -> u64 {
         hash_key(self.key())
+    }
+
+    /// Kind, and the normal of a planar face. A centroid would need an area integral.
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(match self.planar_normal(py)? {
+            Some((x, y, z)) => format!("<Face {}, normal {}>", self.kind, repr_point(&[x, y, z])),
+            None => format!("<Face {}>", self.kind),
+        })
     }
 
     /// Area centroid in world millimetres.
@@ -252,6 +273,11 @@ impl Vertex {
 
     fn __hash__(&self) -> u64 {
         hash_key(self.key())
+    }
+
+    fn __repr__(&self) -> String {
+        let (x, y, z) = self.point;
+        format!("<Vertex {}>", repr_point(&[x, y, z]))
     }
 }
 

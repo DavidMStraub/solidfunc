@@ -154,3 +154,11 @@ propagate as `OSError` subclasses.
 | --- | --- |
 | `tessellate(shape: Shape, /, *, chord_tolerance: float \| None = None) -> Mesh` | Uses SolidCore to approximate a shape with triangles and CAD outlines. Chord tolerance is a positive target deviation in millimetres and defaults to a value based on the shape's size. |
 | `solidfunc.view.show(shape: Shape, /, *, chord_tolerance: float \| None = None, screenshot: str \| PathLike[str] \| None = None, jupyter_backend: str = "static") -> None` | Uses optional PyVista to display a part or save a PNG. In Jupyter the default is static. Install `pyvista[jupyter]` for the interactive `"client"` backend. |
+
+A `Shape` that ends a notebook cell displays itself through
+`_repr_mimebundle_`, with no extra Python packages. The bundle has the
+shape's `repr`, a static isometric SVG, and HTML that replaces
+the SVG with an interactive view once the browser has loaded
+[vtk.js](https://github.com/Kitware/vtk-js) (a pinned version, from
+cdn.jsdelivr.net). Frontends that don't run scripts, or have no internet
+access, show the SVG.

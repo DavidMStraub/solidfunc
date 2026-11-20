@@ -60,7 +60,11 @@ solidfunc.
 
 ## Viewing parts
 
-Install [PyVista](https://github.com/pyvista/pyvista) with `pip install pyvista`,
+In Jupyter, VS Code, and other notebook frontends, a shape at the end of a
+cell displays itself as an interactive 3D view, with a static image where
+scripts can't run.
+
+Outside notebooks, install [PyVista](https://github.com/pyvista/pyvista) with `pip install pyvista`,
 then call `show()`:
 
 ```python

@@ -13,7 +13,7 @@ use solidcore_ops::{boolean::boolean, curve_fit, Body, BooleanOp, Error, Result}
 use solidcore_record::{brep::Curve as RecordCurve, Plane, Seg2};
 
 use crate::planar::Profile;
-use crate::{kernel_error, KernelError, Shape};
+use crate::{kernel_error, repr_count, KernelError, Shape};
 
 pub(super) type Frame = ([f64; 3], [f64; 3], [f64; 3]);
 
@@ -77,6 +77,14 @@ impl Path3D {
 
 #[pymethods]
 impl Path3D {
+    fn __repr__(&self) -> String {
+        let state = if self.is_closed { "closed" } else { "open" };
+        format!(
+            "<Path3D {state}, {}>",
+            repr_count(self.curves.len(), "curve")
+        )
+    }
+
     /// Return the world XYZ point at a parameter from 0 to 1.
     ///
     /// Each polyline segment takes an equal share of the range. A spline

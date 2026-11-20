@@ -10,7 +10,7 @@ use solidcore_ops::prism::{
 };
 use solidcore_record::{Loop2, Region2, Seg2, Vec2};
 
-use crate::{kernel_error, Shape};
+use crate::{kernel_error, repr_count, repr_number, repr_point, Shape};
 
 /// A directed XY curve. Its start and end are (x, y) coordinates in mm.
 #[pyclass(frozen, module = "solidfunc.planar")]
@@ -23,6 +23,23 @@ struct Curve2D {
     end: (f64, f64),
 }
 
+#[pymethods]
+impl Curve2D {
+    fn __repr__(&self) -> String {
+        let kind = match self.segment {
+            Seg2::Line { .. } => "line".to_string(),
+            Seg2::Arc { radius, .. } => format!("arc r={}", repr_number(radius)),
+            Seg2::Cubic { .. } | Seg2::Bezier { .. } => "spline".to_string(),
+            Seg2::Conic { .. } => "conic".to_string(),
+        };
+        format!(
+            "<Curve2D {kind}, {} to {}>",
+            repr_point(&[self.start.0, self.start.1]),
+            repr_point(&[self.end.0, self.end.1])
+        )
+    }
+}
+
 /// An ordered chain of connected XY curves.
 #[pyclass(frozen, module = "solidfunc.planar")]
 pub(super) struct Path2D {
@@ -33,6 +50,14 @@ pub(super) struct Path2D {
 
 #[pymethods]
 impl Path2D {
+    fn __repr__(&self) -> String {
+        let state = if self.is_closed { "closed" } else { "open" };
+        format!(
+            "<Path2D {state}, {}>",
+            repr_count(self.curves.len(), "curve")
+        )
+    }
+
     /// Get the curves in traversal order.
     #[getter]
     fn curves<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
@@ -57,6 +82,16 @@ impl Path2D {
 #[pyclass(frozen, module = "solidfunc")]
 pub(super) struct Profile {
     pub(super) region: Region2,
+}
+
+#[pymethods]
+impl Profile {
+    fn __repr__(&self) -> String {
+        match self.region.holes.len() {
+            0 => "<Profile>".into(),
+            holes => format!("<Profile with {}>", repr_count(holes, "hole")),
+        }
+    }
 }
 
 fn same_point(a: (f64, f64), b: (f64, f64)) -> bool {
