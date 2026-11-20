@@ -1,7 +1,7 @@
 # solidfunc
 
-[![PyPI](https://img.shields.io/pypi/v/solidfunc)](https://pypi.org/project/solidfunc/)
-[![Python](https://img.shields.io/pypi/pyversions/solidfunc)](https://pypi.org/project/solidfunc/)
+[![PyPI](https://img.shields.io/pypi/v/solidfunc?cacheSeconds=3600)](https://pypi.org/project/solidfunc/)
+[![Python](https://img.shields.io/pypi/pyversions/solidfunc?cacheSeconds=3600)](https://pypi.org/project/solidfunc/)
 [![CI](https://github.com/DavidMStraub/solidfunc/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidMStraub/solidfunc/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/DavidMStraub/solidfunc/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24395927.svg)](https://doi.org/10.5281/zenodo.24395927)
