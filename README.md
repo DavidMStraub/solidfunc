@@ -20,6 +20,9 @@ pip install solidfunc
 
 Wheels are available for Linux, macOS, and Windows on Python 3.11 and later.
 
+To try it without installing anything, open the example notebook in Colab:
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DavidMStraub/solidfunc/blob/main/examples/try_solidfunc.ipynb)
+
 ## A first part
 
 A plate with a hole whose rim is rounded, exported as STEP:
