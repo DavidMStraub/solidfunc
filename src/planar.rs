@@ -196,32 +196,6 @@ fn _profile(outer: &Path2D, holes: Vec<PyRef<'_, Path2D>>) -> PyResult<Profile> 
     })
 }
 #[pyfunction]
-fn _polygon(mut points: Vec<[f64; 2]>) -> PyResult<Profile> {
-    if points.len() > 1 && points.first() == points.last() {
-        points.pop();
-    }
-    if points.len() < 3 || points.iter().flatten().any(|x| !x.is_finite()) {
-        return Err(PyValueError::new_err(
-            "polygon requires at least three finite vertices",
-        ));
-    }
-    if points.windows(2).any(|pair| pair[0] == pair[1]) {
-        return Err(PyValueError::new_err(
-            "polygon has consecutive duplicate vertices",
-        ));
-    }
-
-    let points: Vec<_> = points.into_iter().map(Vec2::from).collect();
-    checked_profile(
-        "polygon",
-        Region2 {
-            outer: Loop2::polygon(&points),
-            holes: Vec::new(),
-        },
-    )
-}
-
-#[pyfunction]
 fn _extrude(
     py: Python<'_>,
     profile: &Profile,
@@ -251,7 +225,6 @@ pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(_arc, module)?)?;
     module.add_function(wrap_pyfunction!(_path, module)?)?;
     module.add_function(wrap_pyfunction!(_profile, module)?)?;
-    module.add_function(wrap_pyfunction!(_polygon, module)?)?;
     module.add_function(wrap_pyfunction!(_extrude, module)?)?;
     Ok(())
 }

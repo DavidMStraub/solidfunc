@@ -1,10 +1,12 @@
 """Construct directed curves, connected paths and filled regions in the XY plane.
 
-Coordinates and radii are in millimetres. Angles are in degrees.
+Curves and paths are boundaries. ``profile()`` fills a closed boundary into a
+region, and only regions become solids. Coordinates and radii are in
+millimetres. Angles are in degrees.
 """
 
 from collections.abc import Iterable
-from math import radians
+from math import isfinite, radians
 from typing import TypeAlias
 
 from . import _core
@@ -13,8 +15,10 @@ from ._core import Curve2D, Path2D, Profile, Shape
 from ._frame import _XY, Plane
 
 Point2D: TypeAlias = tuple[float, float]
+Boundary: TypeAlias = Curve2D | Path2D
 
 __all__ = [
+    "Boundary",
     "Curve2D",
     "Path2D",
     "Point2D",
@@ -25,6 +29,7 @@ __all__ = [
     "line",
     "path",
     "polygon",
+    "polyline",
     "profile",
     "rectangle",
 ]
@@ -62,7 +67,7 @@ def circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D:
     """Return a closed curve traversed once counterclockwise from its +X point.
 
     ``center`` is a finite (x, y) point and ``radius`` is positive and finite,
-    both in millimetres. Use ``profile(path([curve]))`` to fill the circle.
+    both in millimetres. Use ``profile(circle(...))`` to fill the circle.
     """
     return arc(center=center, radius=radius, start_angle_deg=0.0, sweep_angle_deg=360.0)
 
@@ -78,41 +83,96 @@ def path(curves: Iterable[Curve2D], /) -> Path2D:
     return _core._path(list(curves))
 
 
-def profile(outer: Path2D, /, *, holes: Iterable[Path2D] = ()) -> Profile:
-    """Fill a simple closed path in the XY plane and subtract any holes.
+def _closed_path(boundary: Boundary) -> Path2D:
+    if isinstance(boundary, Curve2D):
+        return path([boundary])
+    return boundary
 
-    ``outer`` is the exterior boundary. Each path in ``holes`` must be closed,
-    lie strictly inside the exterior, and be disjoint from the other holes.
-    Each boundary can be traversed in either direction. Open boundaries,
-    zero-area boundaries, and invalid hole placement raise ``ValueError``.
-    The result can be passed to ``extrude``.
+
+def profile(outer: Boundary, /, *, holes: Iterable[Boundary] = ()) -> Profile:
+    """Fill a simple closed boundary in the XY plane and subtract any holes.
+
+    ``outer`` and each entry of ``holes`` is a closed ``Path2D`` or a single
+    closed ``Curve2D`` such as a circle. Each hole must lie strictly inside the
+    exterior and be disjoint from the other holes. Each boundary can be
+    traversed in either direction. Open boundaries, zero-area boundaries, and
+    invalid hole placement raise ``ValueError``. The result can be passed to
+    ``extrude``, ``revolve``, ``sweep``, and ``loft``.
     """
-    return _core._profile(outer, list(holes))
+    return _core._profile(_closed_path(outer), [_closed_path(hole) for hole in holes])
 
 
-def polygon(points: Iterable[Point2D], /) -> Profile:
-    """Return a filled XY profile bounded by a simple polygon.
+def _vertices(operation: str, points: Iterable[Point2D], minimum: int) -> list[Point2D]:
+    vertices = [(float(x), float(y)) for x, y in points]
+    if len(vertices) < minimum or not all(isfinite(c) for v in vertices for c in v):
+        raise ValueError(f"{operation} requires at least {minimum} finite vertices")
+    if any(a == b for a, b in zip(vertices, vertices[1:], strict=False)):
+        raise ValueError(f"{operation} has consecutive duplicate vertices")
+    return vertices
+
+
+def polyline(points: Iterable[Point2D], /) -> Path2D:
+    """Join consecutive XY points with straight segments.
+
+    Supply at least two finite (x, y) points in millimetres. The path is
+    open unless the last point repeats the first. Consecutive duplicate
+    points raise ``ValueError``. Use ``polygon`` for an outline that closes
+    automatically.
+    """
+    vertices = _vertices("polyline", points, 2)
+    return path(line(a, b) for a, b in zip(vertices, vertices[1:], strict=False))
+
+
+def polygon(points: Iterable[Point2D], /) -> Path2D:
+    """Return the closed straight-edged boundary through the given vertices.
 
     ``points`` supplies at least three finite (x, y) vertices in millimetres,
     in either clockwise or counterclockwise boundary order. The last vertex
     joins the first automatically. Repeating the first vertex at the end
     is also accepted. Consecutive duplicate vertices and zero-area outlines
-    raise ``ValueError``.
+    raise ``ValueError``. Use ``profile(polygon(...))`` to fill it.
     """
-    return _core._polygon(list(points))
+    vertices = list(points)
+    if len(vertices) > 1 and vertices[0] == vertices[-1]:
+        vertices.pop()
+    vertices = _vertices("polygon", vertices, 3)
+    closed = [*vertices, vertices[0]]
+    twice_area = sum(
+        x0 * y1 - x1 * y0
+        for (x0, y0), (x1, y1) in zip(closed, closed[1:], strict=False)
+    )
+    if twice_area == 0:
+        raise ValueError("polygon outline has zero area")
+    return polyline(closed)
 
 
-def rectangle(*, size_x: float, size_y: float, origin: Point2D = (0.0, 0.0)) -> Profile:
-    """Return a filled axis-aligned rectangle in the local XY plane.
+def rectangle(*, size_x: float, size_y: float, center: Point2D = (0.0, 0.0)) -> Path2D:
+    """Return the closed boundary of an axis-aligned rectangle in local XY.
 
     ``size_x`` and ``size_y`` are positive, finite dimensions along X and Y.
-    ``origin`` is the (x, y) corner with the minimum coordinates.
-    All coordinates and dimensions are in millimetres.
+    ``center`` is the rectangle's (x, y) center. All coordinates and
+    dimensions are in millimetres. The boundary runs counterclockwise from
+    the minimum corner. Use ``profile(rectangle(...))`` to fill it.
     """
     _positive("size_x", size_x)
     _positive("size_y", size_y)
-    x, y = origin
-    return polygon([(x, y), (x + size_x, y), (x + size_x, y + size_y), (x, y + size_y)])
+    x, y = center
+    dx, dy = size_x / 2, size_y / 2
+    return polygon(
+        [(x - dx, y - dy), (x + dx, y - dy), (x + dx, y + dy), (x - dx, y + dy)]
+    )
+
+
+def _require_profile(operation: str, value: object) -> None:
+    if not isinstance(value, Profile):
+        hint = (
+            " Fill a closed boundary with profile(...) first."
+            if isinstance(value, Curve2D | Path2D)
+            else ""
+        )
+        raise TypeError(
+            f"{operation} requires a Profile, not {type(value).__name__}.{hint}"
+        )
 
 
 def extrude(profile: Profile, *, distance: float, plane: Plane = _XY) -> Shape:
@@ -121,6 +181,8 @@ def extrude(profile: Profile, *, distance: float, plane: Plane = _XY) -> Shape:
     ``plane`` places the profile's local XY coordinates, defaulting to world
     XY. ``distance`` is a finite, nonzero signed distance in millimetres.
     Positive follows the plane normal, and negative goes the other way.
-    The original profile remains reusable.
+    The original profile remains reusable. Passing a curve or path instead
+    of a ``Profile`` raises ``TypeError``.
     """
+    _require_profile("extrude", profile)
     return _core._extrude(profile, distance, (plane.origin, plane.x_dir, plane.y_dir))

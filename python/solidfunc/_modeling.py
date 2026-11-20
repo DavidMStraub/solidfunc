@@ -7,6 +7,7 @@ from . import _core
 from ._api import Point3D
 from ._core import Path3D, Profile, Shape
 from ._frame import _XY, Plane
+from .planar import _require_profile
 
 
 def revolve(
@@ -25,6 +26,7 @@ def revolve(
     and follows the right-hand rule. The profile must lie on one side
     of the axis, and its boundary may touch the axis.
     """
+    _require_profile("revolve", profile)
     return _core._revolve(
         profile,
         (plane.origin, plane.x_dir, plane.y_dir),
@@ -56,6 +58,7 @@ def loft(
             paths.append(section)
         else:
             profile, plane = section
+            _require_profile("loft", profile)
             profiles.append((profile, (plane.origin, plane.x_dir, plane.y_dir)))
     if paths and profiles:
         raise ValueError("loft sections must be all profile-plane pairs or all paths")
@@ -91,4 +94,5 @@ def sweep(profile: Profile, path: Path3D, /, *, plane: Plane) -> Shape:
     Straight segments meet at mitres at sharp polyline corners. The kernel
     can reject paths whose corners or curvature make the sweep self-intersect.
     """
+    _require_profile("sweep", profile)
     return _core._sweep(profile, (plane.origin, plane.x_dir, plane.y_dir), path)

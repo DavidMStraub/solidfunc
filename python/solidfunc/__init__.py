@@ -29,6 +29,7 @@ from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
 from .planar import (
+    Boundary,
     Curve2D,
     Path2D,
     Point2D,
@@ -38,6 +39,7 @@ from .planar import (
     line,
     path,
     polygon,
+    polyline,
     profile,
     rectangle,
 )
@@ -45,6 +47,7 @@ from .planar import (
 __version__ = version("solidfunc")
 
 __all__ = [
+    "Boundary",
     "Bounds",
     "Curve2D",
     "Edge",
@@ -80,6 +83,7 @@ __all__ = [
     "path",
     "planar",
     "polygon",
+    "polyline",
     "polyline3d",
     "profile",
     "rectangle",

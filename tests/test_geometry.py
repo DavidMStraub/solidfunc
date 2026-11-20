@@ -102,8 +102,10 @@ def test_invalid_rotation(axis: sf.Point3D, angle: float, origin: sf.Point3D) ->
 def test_polygon_extrusion_preserves_reusable_profile(tmp_path: Path) -> None:
     # A clockwise concave outline with an explicit closing vertex.
     points = [(0, 0), (0, 4), (2, 4), (2, 1), (5, 1), (5, 0), (0, 0)]
-    profile = sf.polygon(iter(points))
-    assert type(profile) is sf.Profile
+    outline = sf.polygon(iter(points))
+    assert type(outline) is sf.Path2D
+    assert outline.is_closed and len(outline.curves) == 6
+    profile = sf.profile(outline)
     points.clear()
 
     above = sf.extrude(profile, distance=2)
@@ -134,6 +136,6 @@ def test_invalid_polygon(points: list[sf.Point2D]) -> None:
 
 @pytest.mark.parametrize("height", [0, math.inf, -math.inf, math.nan])
 def test_invalid_extrusion_height(height: float) -> None:
-    profile = sf.polygon([(0, 0), (1, 0), (0, 1)])
+    profile = sf.profile(sf.polygon([(0, 0), (1, 0), (0, 1)]))
     with pytest.raises(ValueError, match="distance"):
         sf.extrude(profile, distance=height)

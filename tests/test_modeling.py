@@ -11,12 +11,13 @@ def test_placed_extrusion_and_stepped_revolve() -> None:
     plane = sf.Plane(origin=(2, 3, 4), x_dir=(2, 0, 0), y_dir=(1, 0, 3))
     assert plane.normal == (0, -1, 0)
     assert plane.point(1, 2, 3) == (3, 0, 6)
-    triangle = sf.polygon([(0, 0), (2, 0), (0, 1)])
+    triangle = sf.profile(sf.polygon([(0, 0), (2, 0), (0, 1)]))
     lower, upper = sf.bounds(sf.extrude(triangle, distance=5, plane=plane))
     assert lower == pytest.approx((2, -2, 4))
     assert upper == pytest.approx((4, 3, 5))
 
-    profile = sf.polygon([(0, 0), (9, 0), (9, 64), (2.5, 64), (2.5, 65), (0, 65)])
+    outline = [(0, 0), (9, 0), (9, 64), (2.5, 64), (2.5, 65), (0, 65)]
+    profile = sf.profile(sf.polygon(outline))
     cell = sf.revolve(
         profile,
         plane=sf.Plane(y_dir=(0, 0, 1)),
@@ -59,8 +60,8 @@ def test_face_plane_and_fillet_from_the_hole_rim() -> None:
 
 
 def test_round_to_rectangular_loft() -> None:
-    circle = sf.profile(sf.path([sf.circle(radius=25)]))
-    rectangle = sf.rectangle(size_x=60, size_y=40, origin=(-30, -20))
+    circle = sf.profile(sf.circle(radius=25))
+    rectangle = sf.profile(sf.rectangle(size_x=60, size_y=40))
     duct = sf.loft(
         [(circle, sf.Plane()), (rectangle, sf.Plane(origin=(0, 0, 80)))],
         interpolation_deg=1,
@@ -72,7 +73,7 @@ def test_round_to_rectangular_loft() -> None:
 
 
 def test_mitred_polyline_sweep() -> None:
-    profile = sf.profile(sf.path([sf.circle(radius=12)]))
+    profile = sf.profile(sf.circle(radius=12))
     path = sf.polyline3d([(0, 0, 0), (30, 0, 0), (30, 30, 0), (60, 30, 0)])
     plane = sf.Plane.from_normal(
         origin=path.point_at(0),

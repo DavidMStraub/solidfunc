@@ -23,9 +23,12 @@ and topology types are created by the functions listed below.
 
 ## Planar construction
 
-`Curve2D` stores a native analytic line or arc. `Path2D` stores an ordered
-chain of these curves, exposed by `.curves`, and reports closure via
-`.is_closed`. A `Profile` is a filled region in local XY.
+Curves and paths are boundaries; a `Profile` is a filled region. Only a
+`Profile` becomes a solid: `extrude`, `revolve`, `sweep`, and `loft` raise
+`TypeError` for a curve or path. `Curve2D` stores a native analytic line or
+arc. `Path2D` stores an ordered chain of these curves, exposed by `.curves`,
+and reports closure via `.is_closed`. `Boundary` is the alias
+`Curve2D | Path2D`.
 
 | Signature | Behavior |
 | --- | --- |
@@ -33,9 +36,10 @@ chain of these curves, exposed by `.curves`, and reports closure via
 | `arc(*, center: Point2D, radius: float, start_angle_deg: float, sweep_angle_deg: float) -> Curve2D` | Circular arc. Start is measured counterclockwise from +X. Sweep is positive counterclockwise or negative clockwise, up to one full turn. |
 | `circle(*, radius: float, center: Point2D = (0.0, 0.0)) -> Curve2D` | Full circle starting at its +X point and going counterclockwise. |
 | `path(curves: Iterable[Curve2D], /) -> Path2D` | Joins a nonempty sequence in traversal order. Neighboring endpoints must be within 1e-7 mm. The same tolerance determines closure. |
-| `profile(outer: Path2D, /, *, holes: Iterable[Path2D] = ()) -> Profile` | Fills a simple closed path. Hole paths must be closed, strictly inside the outer path, and mutually disjoint. Either winding is accepted. |
-| `polygon(points: Iterable[Point2D], /) -> Profile` | Fills a simple straight-edged outline from at least three vertices in boundary order. Closure is automatic. |
-| `rectangle(*, size_x: float, size_y: float, origin: Point2D = (0.0, 0.0)) -> Profile` | Fills an axis-aligned XY rectangle from its minimum corner. |
+| `polyline(points: Iterable[Point2D], /) -> Path2D` | Straight segments through at least two points. Open unless the last point repeats the first. |
+| `polygon(points: Iterable[Point2D], /) -> Path2D` | Closed straight-edged boundary through at least three vertices in boundary order. Closure is automatic. |
+| `rectangle(*, size_x: float, size_y: float, center: Point2D = (0.0, 0.0)) -> Path2D` | Closed axis-aligned rectangle boundary around `center`. |
+| `profile(outer: Boundary, /, *, holes: Iterable[Boundary] = ()) -> Profile` | Fills a simple closed boundary. A single closed curve such as a circle is accepted directly. Holes must be closed, strictly inside the outer boundary, and mutually disjoint. Either winding is accepted. |
 
 ## Spatial paths
 
