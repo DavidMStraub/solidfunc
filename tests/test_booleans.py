@@ -12,11 +12,11 @@ Boolean = Callable[[sf.Shape, sf.Shape], sf.Shape | None]
 @pytest.mark.parametrize(
     ("operation", "expected_volume", "lower", "upper"),
     [
-        (sf.union, 36, (0, 0, 0), (6, 3, 2)),
-        (sf.intersection, 12, (2, 0, 0), (4, 3, 2)),
-        (sf.difference, 12, (0, 0, 0), (2, 3, 2)),
-        (add, 36, (0, 0, 0), (6, 3, 2)),
-        (sub, 12, (0, 0, 0), (2, 3, 2)),
+        (sf.union, 36, (-2, -1.5, 0), (4, 1.5, 2)),
+        (sf.intersection, 12, (0, -1.5, 0), (2, 1.5, 2)),
+        (sf.difference, 12, (-2, -1.5, 0), (0, 1.5, 2)),
+        (add, 36, (-2, -1.5, 0), (4, 1.5, 2)),
+        (sub, 12, (-2, -1.5, 0), (0, 1.5, 2)),
     ],
 )
 def test_overlapping_boxes(
@@ -38,8 +38,8 @@ def test_overlapping_boxes(
     # Editing a later copy must not affect either operand or the result.
     sf.translate(result, x=100)
     assert sf.bounds(result) == (lower, upper)
-    assert sf.bounds(left_alias) == ((0, 0, 0), (4, 3, 2))
-    assert sf.bounds(right_alias) == ((2, 0, 0), (6, 3, 2))
+    assert sf.bounds(left_alias) == ((-2, -1.5, 0), (2, 1.5, 2))
+    assert sf.bounds(right_alias) == ((0, -1.5, 0), (4, 1.5, 2))
     assert sf.volume(left_alias) == pytest.approx(24)
     assert sf.volume(right_alias) == pytest.approx(24)
 
@@ -56,9 +56,9 @@ def test_same_operand(operation: Boolean) -> None:
     else:
         assert result is not None and result is not block
         assert sf.volume(result) == pytest.approx(24)
-        assert sf.bounds(result) == ((0, 0, 0), (4, 3, 2))
+        assert sf.bounds(result) == ((-2, -1.5, 0), (2, 1.5, 2))
     assert sf.volume(block) == pytest.approx(24)
-    assert sf.bounds(block) == ((0, 0, 0), (4, 3, 2))
+    assert sf.bounds(block) == ((-2, -1.5, 0), (2, 1.5, 2))
 
 
 def test_chained_operators() -> None:
@@ -68,7 +68,7 @@ def test_chained_operators() -> None:
 
     assert result is not None
     assert sf.volume(result) == pytest.approx(12)
-    assert sf.bounds(result) == ((0, 0, 0), (2, 3, 2))
+    assert sf.bounds(result) == ((-2, -1.5, 0), (0, 1.5, 2))
     assert sf.volume(block) == pytest.approx(24)
     assert sf.volume(shifted) == pytest.approx(24)
 
@@ -101,7 +101,7 @@ def test_disjoint_operands() -> None:
 
     combined = sf.union(left, right)
     assert sf.volume(combined) == pytest.approx(48)
-    assert sf.bounds(combined) == ((0, 0, 0), (14, 3, 2))
+    assert sf.bounds(combined) == ((-2, -1.5, 0), (12, 1.5, 2))
     assert sf.intersection(left, right) is None
     remaining = sf.difference(left, right)
     assert remaining is not None and remaining is not left
@@ -111,7 +111,7 @@ def test_disjoint_operands() -> None:
 
 def test_containment_and_difference_order() -> None:
     outer = sf.box(size_x=10, size_y=10, size_z=10)
-    inner = sf.box(size_x=2, size_y=2, size_z=2, origin=(4, 4, 4))
+    inner = sf.translate(sf.box(size_x=2, size_y=2, size_z=2), z=4)
 
     cavity = sf.difference(outer, inner)
     assert cavity is not None
@@ -123,9 +123,9 @@ def test_containment_and_difference_order() -> None:
 
 def test_difference_can_split_a_solid() -> None:
     block = sf.box(size_x=6, size_y=2, size_z=2)
-    cutter = sf.box(size_x=2, size_y=4, size_z=4, origin=(2, -1, -1))
+    cutter = sf.translate(sf.box(size_x=2, size_y=4, size_z=4), z=-1)
     result = sf.difference(block, cutter)
 
     assert result is not None
     assert sf.volume(result) == pytest.approx(16)
-    assert sf.bounds(result) == ((0, 0, 0), (6, 2, 2))
+    assert sf.bounds(result) == ((-3, -1, 0), (3, 1, 2))

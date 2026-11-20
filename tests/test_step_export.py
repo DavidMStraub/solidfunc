@@ -13,7 +13,8 @@ import solidfunc as sf
 )
 def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) -> None:
     cq = pytest.importorskip("cadquery")
-    cylinder = sf.cylinder(radius=2, height=12, origin=(5, 5, -1))
+    # A through-cylinder on the axis of the centred block.
+    cylinder = sf.translate(sf.cylinder(radius=2, height=12), z=-1)
     block = sf.box(size_x=10, size_y=10, size_z=10)
     solid_count = 1
     if operation == "cylinder":
@@ -33,7 +34,7 @@ def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) ->
         expected_volume = 2000
         solid_count = 2
     else:
-        cutter = sf.box(size_x=2, size_y=12, size_z=12, origin=(4, -1, -1))
+        cutter = sf.translate(sf.box(size_x=2, size_y=12, size_z=12), z=-1)
         result = sf.difference(block, cutter)
         expected_volume = 800
         solid_count = 2
@@ -58,7 +59,7 @@ def test_cylinder_and_boolean_step_round_trip(tmp_path: Path, operation: str) ->
 @pytest.mark.parametrize("as_string", [False, True])
 def test_step_round_trip(tmp_path: Path, as_string: bool) -> None:
     cq = pytest.importorskip("cadquery")
-    original = sf.box(size_x=10, size_y=20, size_z=30, origin=(1, 2, 3))
+    original = sf.box(size_x=10, size_y=20, size_z=30)
     block = sf.translate(original, x=100, y=-5, z=2)
     path = tmp_path / "block.step"
 
@@ -72,7 +73,7 @@ def test_step_round_trip(tmp_path: Path, as_string: bool) -> None:
     bounds = imported.BoundingBox()
     assert (bounds.xmin, bounds.ymin, bounds.zmin) == pytest.approx(lower)
     assert (bounds.xmax, bounds.ymax, bounds.zmax) == pytest.approx(upper)
-    assert sf.bounds(original) == ((1, 2, 3), (11, 22, 33))
+    assert sf.bounds(original) == ((-5, -10, 0), (5, 10, 30))
 
 
 def test_step_file_and_input_preservation(tmp_path: Path) -> None:
@@ -84,7 +85,7 @@ def test_step_file_and_input_preservation(tmp_path: Path) -> None:
     assert text.startswith("ISO-10303-21;")
     assert text.rstrip().endswith("END-ISO-10303-21;")
     assert "MANIFOLD_SOLID_BREP('Block'" in text
-    assert sf.bounds(block) == ((0, 0, 0), (10, 20, 30))
+    assert sf.bounds(block) == ((-5, -10, 0), (5, 10, 30))
     assert sf.volume(block) == pytest.approx(6000)
 
 

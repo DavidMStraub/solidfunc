@@ -62,8 +62,11 @@ knot parameter.
 
 | Signature | Behavior |
 | --- | --- |
-| `box(*, size_x: float, size_y: float, size_z: float, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Box with positive sizes along +X, +Y, and +Z from its minimum corner. |
-| `cylinder(*, radius: float, height: float, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Cylinder with positive radius and height extending along +Z from its base center. |
+| `box(*, size_x: float, size_y: float, size_z: float) -> Shape` | Box with positive sizes, centred in X and Y, rising from z = 0 to `size_z`. |
+| `cylinder(*, radius: float, height: float) -> Shape` | Cylinder with positive radius and height on the Z axis, rising from z = 0 to `height`. |
+
+Primitives share one convention: centred in local XY with the base at
+z = 0. Position them with `translate`, `rotate`, or `mirror`.
 | `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
 | `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
 | `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, interpolation_deg: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `interpolation_deg` is a polynomial degree. |

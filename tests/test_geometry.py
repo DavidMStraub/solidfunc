@@ -7,15 +7,20 @@ import pytest
 import solidfunc as sf
 
 
-def test_box_geometry() -> None:
-    block = sf.box(size_x=10, size_y=20, size_z=30, origin=(1, 2, 3))
+def test_box_is_centred_in_xy_with_its_base_at_z0() -> None:
+    block = sf.box(size_x=10, size_y=20, size_z=30)
     assert type(block) is sf.Shape
     assert sf.volume(block) == pytest.approx(6000)
-    assert sf.bounds(block) == ((1, 2, 3), (11, 22, 33))
+    assert sf.bounds(block) == ((-5, -10, 0), (5, 10, 30))
 
 
 def test_cylinder_geometry_and_translation() -> None:
-    cylinder = sf.cylinder(radius=2.5, height=7, origin=(1, -2, 3))
+    base = sf.cylinder(radius=2.5, height=7)
+    base_lower, base_upper = sf.bounds(base)
+    assert base_lower == pytest.approx((-2.5, -2.5, 0))
+    assert base_upper == pytest.approx((2.5, 2.5, 7))
+
+    cylinder = sf.translate(base, x=1, y=-2, z=3)
     moved = sf.translate(cylinder, x=10, y=-5, z=2)
 
     assert sf.volume(cylinder) == pytest.approx(math.pi * 2.5**2 * 7)
@@ -37,11 +42,6 @@ def test_invalid_cylinder_dimensions(dimension: str, value: float) -> None:
         sf.cylinder(**dimensions)
 
 
-def test_invalid_cylinder_origin() -> None:
-    with pytest.raises(ValueError, match="cylinder"):
-        sf.cylinder(radius=2, height=3, origin=(math.inf, 0, 0))
-
-
 def test_translation_preserves_input_and_aliases() -> None:
     block = sf.box(size_x=10, size_y=20, size_z=30)
     alias = block
@@ -49,9 +49,9 @@ def test_translation_preserves_input_and_aliases() -> None:
     moved_again = sf.translate(moved, x=10)
 
     assert moved is not block
-    assert sf.bounds(alias) == ((0, 0, 0), (10, 20, 30))
-    assert sf.bounds(moved) == ((100, -5, 2), (110, 15, 32))
-    assert sf.bounds(moved_again) == ((110, -5, 2), (120, 15, 32))
+    assert sf.bounds(alias) == ((-5, -10, 0), (5, 10, 30))
+    assert sf.bounds(moved) == ((95, -15, 2), (105, 5, 32))
+    assert sf.bounds(moved_again) == ((105, -15, 2), (115, 5, 32))
     assert sf.volume(moved) == pytest.approx(sf.volume(block))
 
 
@@ -68,11 +68,11 @@ def test_native_argument_error_preserves_body() -> None:
     block = sf.box(size_x=10, size_y=20, size_z=30)
     with pytest.raises(ValueError, match="translate"):
         sf.translate(block, x=math.nan)
-    assert sf.bounds(block) == ((0, 0, 0), (10, 20, 30))
+    assert sf.bounds(block) == ((-5, -10, 0), (5, 10, 30))
 
 
 def test_rotation_about_offset_axis_preserves_shape() -> None:
-    block = sf.box(size_x=4, size_y=2, size_z=1, origin=(1, 2, 3))
+    block = sf.translate(sf.box(size_x=4, size_y=2, size_z=1), x=3, y=3, z=3)
     rotated = sf.rotate(
         block, axis_direction=(0, 0, 2), angle_deg=90, axis_origin=(1, 2, 3)
     )

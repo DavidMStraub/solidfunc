@@ -126,7 +126,7 @@ def test_rectangle_extrudes_to_box_with_same_axis_sizes() -> None:
     assert outline.is_closed
     assert outline.curves[0].start == (2, -1)
     extruded = sf.extrude(sf.profile(outline), distance=5)
-    block = sf.box(size_x=3, size_y=7, size_z=5, origin=(2, -1, 0))
+    block = sf.translate(sf.box(size_x=3, size_y=7, size_z=5), x=3.5, y=2.5)
     assert sf.bounds(extruded) == sf.bounds(block) == ((2, -1, 0), (5, 6, 5))
     assert sf.volume(extruded) == pytest.approx(105)
 

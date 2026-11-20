@@ -29,12 +29,12 @@ def test_placed_extrusion_and_stepped_revolve() -> None:
 
 def test_face_plane_and_fillet_from_the_hole_rim() -> None:
     plate = sf.box(size_x=30, size_y=30, size_z=5)
-    drilled = plate - sf.cylinder(radius=4, height=7, origin=(15, 15, -1))
+    drilled = plate - sf.translate(sf.cylinder(radius=4, height=7), z=-1)
     assert drilled is not None
 
     (top,) = [face for face in sf.faces(drilled) if face.normal == (0, 0, 1)]
     frame = sf.Plane.from_face(top)
-    assert frame.origin == pytest.approx((15, 15, 5))
+    assert frame.origin == pytest.approx((0, 0, 5))
     assert frame.normal == (0, 0, 1)
 
     boundary = sf.edges(top)
@@ -46,7 +46,7 @@ def test_face_plane_and_fillet_from_the_hole_rim() -> None:
         "line",
     ]
     (rim,) = [edge for edge in boundary if edge.kind == "circle"]
-    assert rim.circle_center == pytest.approx((15, 15, 5))
+    assert rim.circle_center == pytest.approx((0, 0, 5))
     assert rim.kind == "circle"
     assert rim.circle_radius == pytest.approx(4)
     assert rim.length == pytest.approx(8 * pi)
@@ -104,7 +104,7 @@ def test_spline_path_evaluation_and_spatial_loft() -> None:
 
 
 def test_mirror_and_step_round_trip(tmp_path: Path) -> None:
-    original = sf.box(size_x=2, size_y=3, size_z=4, origin=(2, 0, 0))
+    original = sf.translate(sf.box(size_x=2, size_y=3, size_z=4), x=3, y=1.5)
     reflected = sf.mirror(original, normal=(1, 0, 0))
     assert sf.bounds(original) == ((2, 0, 0), (4, 3, 4))
     assert sf.bounds(reflected) == ((-4, 0, 0), (-2, 3, 4))
@@ -176,7 +176,7 @@ def test_topology_traversal() -> None:
     assert len(sf.vertices(box)) == 8
     top = next(face for face in sf.faces(box) if face.normal == (0, 0, 1))
     corners = {vertex.point for vertex in sf.vertices(top)}
-    assert corners == {(0, 0, 4), (2, 0, 4), (0, 3, 4), (2, 3, 4)}
+    assert corners == {(-1, -1.5, 4), (1, -1.5, 4), (-1, 1.5, 4), (1, 1.5, 4)}
     for edge in sf.edges(top):
         endpoints = {vertex.point for vertex in sf.vertices(edge)}
         assert len(endpoints) == 2 and endpoints <= corners

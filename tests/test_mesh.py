@@ -7,7 +7,7 @@ import solidfunc as sf
 
 
 def test_tessellate_preserves_cad_edge_outlines() -> None:
-    block = sf.box(size_x=2, size_y=3, size_z=5, origin=(1, 2, 3))
+    block = sf.translate(sf.box(size_x=2, size_y=3, size_z=5), x=2, y=3.5, z=3)
     mesh = sf.tessellate(block)
     assert mesh.triangles
     assert len(mesh.vertices) == len(mesh.normals)

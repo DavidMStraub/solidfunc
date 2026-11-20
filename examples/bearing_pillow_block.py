@@ -20,38 +20,30 @@ def bearing_pillow_block(
     counterbore_diameter: float = 4.4,
     counterbore_depth: float = 2.1,
 ) -> sf.Shape:
-    """Return a centred plate with a bearing hole and four counterbored holes.
+    """Return a plate with a bearing hole and four counterbored holes.
 
-    All dimensions are in millimetres. ``padding`` is the total reduction in
-    length and width of the hole pattern, so hole centres are padding / 2
-    from the edges. Counterbores open on the +Z face.
+    All dimensions are in millimetres. The plate is centred in XY with its
+    base at z = 0. ``padding`` is the total reduction in length and width of
+    the hole pattern, so hole centres are padding / 2 from the edges.
+    Counterbores open on the top face.
     """
-    block = sf.box(
-        size_x=length,
-        size_y=width,
-        size_z=thickness,
-        origin=(-length / 2, -width / 2, -thickness / 2),
-    )
+    block = sf.box(size_x=length, size_y=width, size_z=thickness)
     # Extend through-cut tools beyond both faces of the plate.
     overcut = 1.0
-    cutters = sf.cylinder(
-        radius=bearing_diameter / 2,
-        height=thickness + 2 * overcut,
-        origin=(0, 0, -thickness / 2 - overcut),
+    through = thickness + 2 * overcut
+    cutters = sf.translate(
+        sf.cylinder(radius=bearing_diameter / 2, height=through), z=-overcut
+    )
+    clearance = sf.cylinder(radius=clearance_diameter / 2, height=through)
+    counterbore = sf.cylinder(
+        radius=counterbore_diameter / 2, height=counterbore_depth + overcut
     )
     for x in (-(length - padding) / 2, (length - padding) / 2):
         for y in (-(width - padding) / 2, (width - padding) / 2):
-            clearance = sf.cylinder(
-                radius=clearance_diameter / 2,
-                height=thickness + 2 * overcut,
-                origin=(x, y, -thickness / 2 - overcut),
+            cutters = cutters + sf.translate(clearance, x=x, y=y, z=-overcut)
+            cutters = cutters + sf.translate(
+                counterbore, x=x, y=y, z=thickness - counterbore_depth
             )
-            counterbore = sf.cylinder(
-                radius=counterbore_diameter / 2,
-                height=counterbore_depth + overcut,
-                origin=(x, y, thickness / 2 - counterbore_depth),
-            )
-            cutters = cutters + clearance + counterbore
 
     result = block - cutters
     if result is None:

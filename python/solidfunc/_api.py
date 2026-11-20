@@ -17,36 +17,30 @@ def _positive(name: str, value: float) -> None:
         raise ValueError(f"{name} must be finite and greater than zero")
 
 
-def box(
-    *,
-    size_x: float,
-    size_y: float,
-    size_z: float,
-    origin: Point3D = (0.0, 0.0, 0.0),
-) -> Shape:
-    """Construct a box extending along +X, +Y and +Z from its lower corner.
+def box(*, size_x: float, size_y: float, size_z: float) -> Shape:
+    """Construct a box centred on the Z axis with its base at z = 0.
 
     ``size_x``, ``size_y``, and ``size_z`` are the positive, finite dimensions
-    along X, Y, and Z respectively. ``origin`` gives the (x, y, z) corner
-    with the minimum coordinate along each axis. All values are in millimetres.
+    along X, Y, and Z in millimetres. The box spans ``±size_x / 2`` and
+    ``±size_y / 2`` and rises from z = 0 to ``size_z``, matching ``cylinder``.
+    Place it with ``translate`` or ``place``.
     """
     for name, value in (("size_x", size_x), ("size_y", size_y), ("size_z", size_z)):
         _positive(name, value)
-    return _core._box(origin, (size_x, size_y, size_z))
+    return _core._box((-size_x / 2, -size_y / 2, 0.0), (size_x, size_y, size_z))
 
 
-def cylinder(
-    *, radius: float, height: float, origin: Point3D = (0.0, 0.0, 0.0)
-) -> Shape:
-    """Construct a cylinder along +Z from its base centre, in millimetres.
+def cylinder(*, radius: float, height: float) -> Shape:
+    """Construct a cylinder on the Z axis with its base centre at the origin.
 
     ``radius`` is the radius of each circular face and ``height`` is the
-    distance between them, both positive and finite. ``origin`` is the
-    (x, y, z) centre of the lower circular face.
+    distance between them, both positive and finite, in millimetres. The
+    cylinder rises from z = 0 to ``height``. Place it with ``translate`` or
+    ``place``.
     """
     _positive("radius", radius)
     _positive("height", height)
-    return _core._cylinder(origin, radius, height)
+    return _core._cylinder((0.0, 0.0, 0.0), radius, height)
 
 
 def union(left: Shape, right: Shape, /) -> Shape:
