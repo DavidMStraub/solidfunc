@@ -5,28 +5,49 @@ build-backend = "maturin"
 [project]
 name = "solidfunc"
 dynamic = ["version"]
-description = "An experimental functional Python API for SolidCore."
+description = "Typed, functional Python CAD on SolidCore, a Rust B-rep kernel: an experiment in kernel dependence."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE", "licenses/*"]
-authors = [{ name = "David Straub" }]
-keywords = ["cad", "geometry", "solidcore", "functional"]
+authors = [{ name = "David M. Straub" }]
+keywords = [
+    "cad",
+    "cad-as-code",
+    "code-cad",
+    "parametric",
+    "brep",
+    "step",
+    "geometry",
+    "solidcore",
+    "functional",
+]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Manufacturing",
     "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Rust",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Scientific/Engineering",
     "Typing :: Typed",
 ]
 
 [project.urls]
 Repository = "https://github.com/DavidMStraub/solidfunc"
+Documentation = "https://github.com/DavidMStraub/solidfunc/blob/main/API.md"
+Changelog = "https://github.com/DavidMStraub/solidfunc/releases"
 Issues = "https://github.com/DavidMStraub/solidfunc/issues"
+"CAD as Code book" = "https://github.com/DavidMStraub/cad-as-code-book"
 
 [dependency-groups]
 dev = [

@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use solidfunc in your work, please cite it as below."
+type: software
+title: "solidfunc: a typed, functional Python CAD API on the SolidCore kernel"
+abstract: >-
+  An experiment in how much parametric code-based CAD depends on its geometry
+  kernel: a typed, functional Python API built on SolidCore, a B-rep kernel
+  written in Rust, instead of OpenCascade.
+authors:
+  - family-names: Straub
+    given-names: David M.
+    orcid: "https://orcid.org/0000-0001-5762-7339"
+    affiliation: "Munich University of Applied Sciences HM"
+    country: DE
+version: 0.1.0a3
+date-released: "2026-11-20"
+license: MIT
+repository-code: "https://github.com/DavidMStraub/solidfunc"
+url: "https://pypi.org/project/solidfunc/"
+keywords:
+  - CAD
+  - code-CAD
+  - parametric modelling
+  - B-rep
+  - STEP
+  - Python
+  - Rust
