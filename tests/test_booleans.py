@@ -44,14 +44,12 @@ def test_overlapping_boxes(
     assert sf.volume(right_alias) == pytest.approx(24)
 
 
-@pytest.mark.parametrize(
-    "operation", [sf.union, sf.intersection, sf.difference, add, sub]
-)
+@pytest.mark.parametrize("operation", [sf.union, sf.intersection, sf.difference, add])
 def test_same_operand(operation: Boolean) -> None:
     block = sf.box(size_x=4, size_y=3, size_z=2)
     result = operation(block, block)
 
-    if operation in (sf.difference, sub):
+    if operation is sf.difference:
         assert result is None
     else:
         assert result is not None and result is not block
@@ -64,9 +62,9 @@ def test_same_operand(operation: Boolean) -> None:
 def test_chained_operators() -> None:
     block = sf.box(size_x=4, size_y=3, size_z=2)
     shifted = sf.translate(block, x=2)
-    result = (block + shifted) - shifted
+    # A third, disjoint operand: chained subtraction type-checks without guards.
+    result = (block + shifted) - shifted - sf.translate(block, x=-10)
 
-    assert result is not None
     assert sf.volume(result) == pytest.approx(12)
     assert sf.bounds(result) == ((-2, -1.5, 0), (0, 1.5, 2))
     assert sf.volume(block) == pytest.approx(24)
@@ -129,3 +127,11 @@ def test_difference_can_split_a_solid() -> None:
     assert result is not None
     assert sf.volume(result) == pytest.approx(16)
     assert sf.bounds(result) == ((-3, -1, 0), (3, 1, 2))
+
+
+def test_subtraction_operator_raises_when_nothing_remains() -> None:
+    block = sf.box(size_x=4, size_y=3, size_z=2)
+    with pytest.raises(sf.EmptyResultError, match="removed all material"):
+        block - block
+    assert issubclass(sf.EmptyResultError, ValueError)
+    assert sf.volume(block) == pytest.approx(24)

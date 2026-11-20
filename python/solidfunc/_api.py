@@ -64,7 +64,8 @@ def difference(left: Shape, right: Shape, /) -> Shape | None:
     """Subtract ``right`` from ``left``, preserving both inputs.
 
     Return ``None`` when no material remains. Disconnected remaining regions
-    are kept together in one opaque geometry value.
+    are kept together in one opaque geometry value. The ``-`` operator does
+    the same but raises ``EmptyResultError`` instead of returning ``None``.
     """
     return _core._difference(left, right)
 

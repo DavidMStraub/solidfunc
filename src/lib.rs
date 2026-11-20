@@ -16,6 +16,7 @@ mod step_import;
 mod topology;
 
 create_exception!(_core, KernelError, PyRuntimeError);
+create_exception!(_core, EmptyResultError, PyValueError);
 
 /// An opaque shape created by solidfunc's construction functions.
 #[pyclass(frozen, module = "solidfunc")]
@@ -29,8 +30,14 @@ impl Shape {
         _union(py, self, other)
     }
 
-    fn __sub__(&self, py: Python<'_>, other: &Shape) -> PyResult<Option<Shape>> {
-        _difference(py, self, other)
+    /// Subtract like `difference`, but raise `EmptyResultError` when no material remains,
+    /// so chained subtraction never yields `None`.
+    fn __sub__(&self, py: Python<'_>, other: &Shape) -> PyResult<Shape> {
+        _difference(py, self, other)?.ok_or_else(|| {
+            EmptyResultError::new_err(
+                "subtraction removed all material; use difference() to receive None instead",
+            )
+        })
     }
 }
 
@@ -149,6 +156,10 @@ fn _step_text(py: Python<'_>, shape: &Shape, file_name: &str, name: &str) -> PyR
 fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<Shape>()?;
     module.add("KernelError", module.py().get_type::<KernelError>())?;
+    module.add(
+        "EmptyResultError",
+        module.py().get_type::<EmptyResultError>(),
+    )?;
     module.add_function(wrap_pyfunction!(_box, module)?)?;
     module.add_function(wrap_pyfunction!(_cylinder, module)?)?;
     module.add_function(wrap_pyfunction!(_union, module)?)?;

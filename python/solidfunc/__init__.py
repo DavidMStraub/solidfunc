@@ -23,7 +23,16 @@ from ._api import (
     union,
     volume,
 )
-from ._core import Edge, Face, KernelError, Path3D, Profile, Shape, Vertex
+from ._core import (
+    Edge,
+    EmptyResultError,
+    Face,
+    KernelError,
+    Path3D,
+    Profile,
+    Shape,
+    Vertex,
+)
 from ._frame import Plane
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
@@ -51,6 +60,7 @@ __all__ = [
     "Bounds",
     "Curve2D",
     "Edge",
+    "EmptyResultError",
     "Face",
     "KernelError",
     "Mesh",

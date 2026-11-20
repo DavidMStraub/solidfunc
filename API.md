@@ -86,7 +86,7 @@ z = 0. Position them with `translate`, `rotate`, or `mirror`.
 | `mirror(shape: Shape, *, normal: Point3D, origin: Point3D = (0.0, 0.0, 0.0)) -> Shape` | Reflects a copy across the plane through `origin` with the specified normal. |
 | `union(left: Shape, right: Shape, /) -> Shape` | Material in either operand. Also `left + right`. |
 | `intersection(left: Shape, right: Shape, /) -> Shape \| None` | Material in both operands. Returns `None` if empty. |
-| `difference(left: Shape, right: Shape, /) -> Shape \| None` | Material in `left` after removing `right`. Also `left - right`. Returns `None` if empty. |
+| `difference(left: Shape, right: Shape, /) -> Shape \| None` | Material in `left` after removing `right`. Returns `None` if empty. `left - right` is the same operation but raises `EmptyResultError` (a `ValueError` subclass) instead, so chained subtraction never yields `None`. |
 
 ## Topology and finishing
 
@@ -120,7 +120,8 @@ position via `.point`.
 | `import_step(path: str \| PathLike[str], /) -> Shape` | Reads closed STEP solids, places their occurrences in world coordinates, and unites them as a single shape. |
 | `export_step(shape: Shape, path: str \| PathLike[str], *, name: str = "Part") -> None` | Writes STEP AP242, using `name` as the part label. Overwrites an existing file. |
 
-Invalid argument values can raise `ValueError`. Kernel failures raise
+Invalid argument values can raise `ValueError`. A subtraction with `-` that
+removes all material raises `EmptyResultError`, a `ValueError` subclass. Kernel failures raise
 `KernelError` (a `RuntimeError` subclass). Filesystem errors from STEP exchange
 propagate as `OSError` subclasses.
 

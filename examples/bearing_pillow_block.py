@@ -45,10 +45,7 @@ def bearing_pillow_block(
                 counterbore, x=x, y=y, z=thickness - counterbore_depth
             )
 
-    result = block - cutters
-    if result is None:
-        raise ValueError("Parameters leave no material in the pillow block")
-    return result
+    return block - cutters
 
 
 if __name__ == "__main__":
