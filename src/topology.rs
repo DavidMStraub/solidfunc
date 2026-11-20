@@ -28,7 +28,22 @@ struct Edge {
     circle_radius: Option<f64>,
 }
 
+fn owner_key(owner: &Py<Shape>) -> usize {
+    owner.as_ptr() as usize
+}
+
+fn hash_key(key: (usize, u32)) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    key.hash(&mut hasher);
+    hasher.finish()
+}
+
 impl Edge {
+    fn key(&self) -> (usize, u32) {
+        (owner_key(&self.owner), self.order.edges[self.index].index())
+    }
+
     fn new(owner: Py<Shape>, order: Arc<Order>, index: usize, curve: Curve) -> Self {
         let (kind, circle_center, circle_radius) = match curve {
             Curve::Line { .. } => ("line", None, None),
@@ -51,6 +66,14 @@ impl Edge {
 
 #[pymethods]
 impl Edge {
+    fn __eq__(&self, other: PyRef<'_, Self>) -> bool {
+        self.key() == other.key()
+    }
+
+    fn __hash__(&self) -> u64 {
+        hash_key(self.key())
+    }
+
     /// Edge length in millimetres.
     #[getter]
     fn length(&self, py: Python<'_>) -> PyResult<f64> {
@@ -68,8 +91,22 @@ struct Face {
     index: usize,
 }
 
+impl Face {
+    fn key(&self) -> (usize, u32) {
+        (owner_key(&self.owner), self.order.faces[self.index].index())
+    }
+}
+
 #[pymethods]
 impl Face {
+    fn __eq__(&self, other: PyRef<'_, Self>) -> bool {
+        self.key() == other.key()
+    }
+
+    fn __hash__(&self) -> u64 {
+        hash_key(self.key())
+    }
+
     /// Area centroid in world millimetres.
     #[getter]
     fn center(&self, py: Python<'_>) -> PyResult<Point> {
@@ -159,8 +196,27 @@ fn _faces<'py>(py: Python<'py>, shape: Py<Shape>) -> PyResult<Bound<'py, PyTuple
 /// A read-only vertex position in world millimetres.
 #[pyclass(frozen, module = "solidfunc")]
 struct Vertex {
+    owner: Py<Shape>,
+    id: u32,
     #[pyo3(get)]
     point: Point,
+}
+
+#[pymethods]
+impl Vertex {
+    fn __eq__(&self, other: PyRef<'_, Self>) -> bool {
+        self.key() == other.key()
+    }
+
+    fn __hash__(&self) -> u64 {
+        hash_key(self.key())
+    }
+}
+
+impl Vertex {
+    fn key(&self) -> (usize, u32) {
+        (owner_key(&self.owner), self.id)
+    }
 }
 
 fn record_index<T: PartialEq>(
@@ -180,12 +236,16 @@ fn record_index<T: PartialEq>(
 
 fn vertex_refs<'py>(
     py: Python<'py>,
+    owner: &Py<Shape>,
     record: &Brep,
+    order: &Order,
     indices: impl IntoIterator<Item = usize>,
 ) -> PyResult<Bound<'py, PyTuple>> {
     let vertices = indices
         .into_iter()
         .map(|index| Vertex {
+            owner: owner.clone_ref(py),
+            id: order.vertices[index].index(),
             point: record.vertices[index].point.into(),
         })
         .collect::<Vec<_>>();
@@ -217,16 +277,16 @@ fn _edge_faces<'py>(py: Python<'py>, edge: &Edge) -> PyResult<Bound<'py, PyTuple
 }
 
 #[pyfunction]
-fn _vertices<'py>(py: Python<'py>, shape: &Shape) -> PyResult<Bound<'py, PyTuple>> {
-    let (record, _) = py
-        .detach(|| shape.body.to_record())
+fn _vertices<'py>(py: Python<'py>, shape: Py<Shape>) -> PyResult<Bound<'py, PyTuple>> {
+    let (record, order) = py
+        .detach(|| shape.get().body.to_record())
         .map_err(|error| kernel_error("vertices", error))?;
-    vertex_refs(py, &record, 0..record.vertices.len())
+    vertex_refs(py, &shape, &record, &order, 0..record.vertices.len())
 }
 
 #[pyfunction]
 fn _face_vertices<'py>(py: Python<'py>, face: &Face) -> PyResult<Bound<'py, PyTuple>> {
-    let (record, indices) = py
+    let (record, order, indices) = py
         .detach(|| {
             let (record, order) = face.owner.get().body.to_record()?;
             let index = record_index(&order.faces, &face.order.faces, face.index)?;
@@ -247,23 +307,23 @@ fn _face_vertices<'py>(py: Python<'py>, face: &Face) -> PyResult<Bound<'py, PyTu
                     }
                 }
             }
-            Ok((record, indices))
+            Ok((record, order, indices))
         })
         .map_err(|error| kernel_error("vertices", error))?;
-    vertex_refs(py, &record, indices)
+    vertex_refs(py, &face.owner, &record, &order, indices)
 }
 
 #[pyfunction]
 fn _edge_vertices<'py>(py: Python<'py>, edge: &Edge) -> PyResult<Bound<'py, PyTuple>> {
-    let (record, indices) = py
+    let (record, order, indices) = py
         .detach(|| {
             let (record, order) = edge.owner.get().body.to_record()?;
             let index = record_index(&order.edges, &edge.order.edges, edge.index)?;
             let indices = BTreeSet::from(record.edges[index].vertices.map(|v| v as usize));
-            Ok((record, indices))
+            Ok((record, order, indices))
         })
         .map_err(|error| kernel_error("vertices", error))?;
-    vertex_refs(py, &record, indices)
+    vertex_refs(py, &edge.owner, &record, &order, indices)
 }
 
 fn finish_edges(
@@ -282,9 +342,12 @@ fn finish_edges(
             "{operation} edges must belong to the supplied shape"
         )));
     }
+    // The same topological edge can arrive through several queries; blend it once.
+    let mut seen = BTreeSet::new();
     let indices: Vec<_> = edges
         .iter()
         .map(|edge| edge.order.edges[edge.index])
+        .filter(|id| seen.insert(*id))
         .collect();
     let shape = shape.get();
     py.detach(|| {

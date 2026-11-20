@@ -187,3 +187,19 @@ def test_topology_traversal() -> None:
     circular = next(edge for edge in sf.edges(cylinder) if edge.kind == "circle")
     assert len(sf.vertices(circular)) == 1
     assert len(sf.faces(circular)) == 2
+
+
+def test_topology_references_compare_by_entity() -> None:
+    block = sf.box(size_x=10, size_y=10, size_z=10)
+    top = max(sf.faces(block), key=lambda face: face.center[2])
+    side = max(sf.faces(block), key=lambda face: face.center[0])
+
+    assert sf.faces(block)[0] == sf.faces(block)[0]
+    assert all(edge in sf.edges(block) for edge in sf.edges(top))
+    assert len(set(sf.edges(top)) | set(sf.edges(side))) == 7
+    assert len(set(sf.vertices(block)) | set(sf.vertices(top))) == 8
+    assert sf.edges(block)[0] != sf.edges(sf.translate(block))[0]
+
+    # The shared edge is listed twice; it is blended once.
+    rounded = sf.fillet(block, [*sf.edges(top), *sf.edges(side)], radius=1)
+    assert 0 < sf.volume(rounded) < 1000

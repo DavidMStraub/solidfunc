@@ -81,7 +81,10 @@ knot parameter.
 A `Face` or `Edge` retains a reference to the exact `Shape` object it came
 from. Edges returned by `edges(face)` belong to that same shape and can be
 used with `fillet()` or `chamfer()`. After an operation creates a new shape,
-query that result for its own edge references.
+query that result for its own edge references. Faces, edges, and vertices
+compare equal and hash alike when they name the same entity of the same
+shape object, so sets and `in` work across queries. `fillet()` and
+`chamfer()` treat repeated references to one edge as a single edge.
 
 A `Face` exposes its centroid through `.center` and its outward unit normal
 through `.normal` (`None` for a nonplanar face). An `Edge` exposes `.kind`,
