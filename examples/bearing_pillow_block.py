@@ -31,21 +31,20 @@ def bearing_pillow_block(
     # Extend through-cut tools beyond both faces of the plate.
     overcut = 1.0
     through = thickness + 2 * overcut
-    cutters = sf.translate(
-        sf.cylinder(radius=bearing_diameter / 2, height=through), z=-overcut
-    )
-    clearance = sf.cylinder(radius=clearance_diameter / 2, height=through)
+    bearing = sf.cylinder(diameter=bearing_diameter, height=through)
+    clearance = sf.cylinder(diameter=clearance_diameter, height=through)
     counterbore = sf.cylinder(
-        radius=counterbore_diameter / 2, height=counterbore_depth + overcut
+        diameter=counterbore_diameter, height=counterbore_depth + overcut
     )
+    cutters = [sf.translate(bearing, z=-overcut)]
     for x in (-(length - padding) / 2, (length - padding) / 2):
         for y in (-(width - padding) / 2, (width - padding) / 2):
-            cutters = cutters + sf.translate(clearance, x=x, y=y, z=-overcut)
-            cutters = cutters + sf.translate(
-                counterbore, x=x, y=y, z=thickness - counterbore_depth
+            cutters.append(sf.translate(clearance, x=x, y=y, z=-overcut))
+            cutters.append(
+                sf.translate(counterbore, x=x, y=y, z=thickness - counterbore_depth)
             )
 
-    return block - cutters
+    return block - sf.union(*cutters)
 
 
 if __name__ == "__main__":
