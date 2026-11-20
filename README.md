@@ -9,7 +9,7 @@ solidfunc is a typed, functional Python library for code-based CAD, built on
 [SolidCore](https://github.com/tangency-labs/solidcore), a B-rep geometry
 kernel written in Rust. You build solids from primitives and planar profiles,
 place and combine them, select faces and edges, round and chamfer edges, and
-export STEP files that open in any CAD tool.
+export STEP files for use in other CAD tools.
 
 ## Install
 
@@ -59,7 +59,8 @@ solidfunc.
 
 ## Viewing parts
 
-Install PyVista with `pip install pyvista`, then call `show()`:
+Install [PyVista](https://github.com/pyvista/pyvista) with `pip install pyvista`,
+then call `show()`:
 
 ```python
 from solidfunc.view import show
@@ -79,59 +80,44 @@ The best-known open-source code-CAD libraries for Python,
 [CadQuery](https://github.com/CadQuery/cadquery) and
 [build123d](https://github.com/gumyr/build123d), are built on the
 [OpenCascade Technology (OCCT)](https://github.com/Open-Cascade-SAS/OCCT)
-kernel. solidfunc asks how much of a parametric code-CAD API depends on its
-kernel: which ideas carry over to a different kernel unchanged, and which
-are really properties of OCCT.
+kernel. SolidCore started as a Rust port of SMLib, the NURBS B-rep kernel
+that NVIDIA published as part of
+[USD BRep](https://github.com/NVIDIA-Omniverse/usd-brep), and has diverged
+from it since. solidfunc asks how much of a parametric code-CAD API depends
+on its kernel, and which of its ideas are properties of OCCT rather than of
+code-CAD in general.
 
 ### Scope
 
-solidfunc is a small academic experiment, not a replacement for anything. For
-real work, use CadQuery or build123d. My book
+solidfunc is a small academic experiment, not a replacement for CadQuery or
+build123d. For real work, use one of them. My book
 [CAD as Code](https://github.com/DavidMStraub/cad-as-code-book) uses
-CadQuery's functional API throughout, and solidfunc borrows many ideas from
-both projects.
-
-The first part above is chapter 2 of the book. In CadQuery's functional API
-it reads like this, and both versions give the same volume, 36802.063 mm³:
-
-```python
-from cadquery import func as cf
-
-plate = cf.box(80, 50, 10)
-hole = cf.cylinder(d=20, h=10)
-part = plate - hole
-hole_edge = part.faces(">Z").edges("%CIRCLE")
-result = part.fillet(2.0, [hole_edge])
-```
-
-The structure is the same. The differences are in the details: solidfunc
-names every dimension, and it selects with Python over typed data where
-CadQuery uses selector strings.
+CadQuery's functional API throughout, and the first part above comes from
+[chapter 2](https://github.com/DavidMStraub/cad-as-code-book/blob/main/chapters/ch02-first-parts.md).
+solidfunc borrows many ideas from CadQuery and build123d.
 
 ### Findings
 
-- **The kernel's data model shapes the API.** SolidCore builds solids from
-  geometric sketch records (segments, loops, regions), not from OCCT's
-  topological edges and wires. solidfunc's `Curve2D`, `Path2D`, and `Profile`
-  mirror those records, and topology (`Face`, `Edge`, `Vertex`) only exists
-  inside a solid.
-- **How a kernel stores surfaces shows up in selection.** SolidCore stores a
-  round on a straight edge as a cone with a zero half-angle, and `revolve`
-  produces B-spline surfaces even for a cone or a sphere. solidfunc reports
-  the first as a cylinder and documents the second, but "select the
-  cylindrical faces" means something different on each kernel.
-- **Immutability has a price.** SolidCore's booleans consume their operands,
-  so solidfunc copies its inputs to keep every value unchanged.
-- **Kernel features become API.** SolidCore unites many bodies in one call,
-  which became `union(*shapes)`.
+- SolidCore builds solids from geometric sketch records (segments, loops,
+  regions), not from OCCT's topological edges and wires. solidfunc's
+  `Curve2D`, `Path2D`, and `Profile` mirror those records, and topology
+  (`Face`, `Edge`, `Vertex`) only exists inside a solid.
+- SolidCore stores a round on a straight edge as a cone with a zero
+  half-angle, and `revolve` produces B-spline surfaces even for a cone or a
+  sphere. solidfunc reports the first as a cylinder and documents the
+  second, so selection by surface type depends on how the kernel stores
+  surfaces.
+- SolidCore's booleans consume their operands, so solidfunc copies its
+  inputs to keep every value unchanged.
+- SolidCore unites many bodies in one call, which became `union(*shapes)`.
 
 ### Coverage
 
-solidfunc covers what the experiment needs: single solids from primitives,
-extrusions, revolutions, lofts, and sweeps; booleans; placement; fillets and
-chamfers; face and edge queries; and STEP import and export. Assemblies,
-colours, open sheets and shells, and 2D operations on profiles are outside
-its scope. Releases are alphas, and the API can change between them.
+solidfunc builds single solids from primitives, extrusions, revolutions,
+lofts, and sweeps, with booleans, placement, fillets and chamfers, face and
+edge queries, and STEP import and export. Assemblies, colours, open sheets
+and shells, and 2D operations on profiles are outside its scope. Releases
+are alphas, and the API can change between them.
 
 ## Development
 
@@ -154,5 +140,7 @@ repository" button gives the reference from
 
 ## License
 
-solidfunc is MIT licensed. SolidCore and its SMLib-derived code are Apache-2.0
+solidfunc is MIT licensed. SolidCore and the SMLib code it derives from
+([USD BRep](https://github.com/NVIDIA-Omniverse/usd-brep)) are Apache-2.0
 licensed. The distribution includes the corresponding upstream notices.
+solidfunc is not affiliated with or endorsed by NVIDIA.
