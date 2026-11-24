@@ -142,3 +142,6 @@ def _tessellate(
 ) -> tuple[
     list[_Point3D], list[_Point3D], list[tuple[int, int, int]], list[list[_Point3D]]
 ]: ...
+def _mesh(
+    shape: Shape, chord_tolerance: float | None, max_edge_length: float | None
+) -> tuple[list[_Point3D], list[tuple[int, int, int]]]: ...
