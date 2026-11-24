@@ -1,7 +1,9 @@
-"""Check the watertight export mesh."""
+"""Check the watertight export mesh and binary STL output."""
 
 import math
+import struct
 from collections import Counter
+from pathlib import Path
 
 import pytest
 import solidfunc as sf
@@ -116,3 +118,50 @@ def test_mesh_requires_positive_finite_options(name: str, value: float) -> None:
     block = sf.box(size_x=1, size_y=1, size_z=1)
     with pytest.raises(ValueError, match=name):
         sf.mesh(block, **{name: value})
+
+
+@pytest.mark.parametrize("name", sorted(BODIES))
+def test_export_stl_round_trip(tmp_path: Path, name: str) -> None:
+    shape = BODIES[name]
+    path = tmp_path / "part.stl"
+    sf.export_stl(shape, path)
+    data = path.read_bytes()
+    (count,) = struct.unpack_from("<I", data, 80)
+    assert len(data) == 84 + 50 * count
+    mesh = sf.mesh(shape)
+    assert count == len(mesh.triangles)
+    volume = 0.0
+    for k in range(count):
+        values = struct.unpack_from("<12f", data, 84 + 50 * k)
+        normal, a, b, c = values[0:3], values[3:6], values[6:9], values[9:12]
+        cross = (
+            (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]),
+            (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]),
+            (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]),
+        )
+        assert sum(n * m for n, m in zip(normal, cross, strict=True)) > 0
+        volume += (
+            sum(
+                p * q
+                for p, q in zip(
+                    a,
+                    (
+                        b[1] * c[2] - b[2] * c[1],
+                        b[2] * c[0] - b[0] * c[2],
+                        b[0] * c[1] - b[1] * c[0],
+                    ),
+                    strict=True,
+                )
+            )
+            / 6
+        )
+    assert volume == pytest.approx(sf.volume(shape), rel=2e-3)
+
+
+def test_export_stl_accepts_string_path_and_overwrites(tmp_path: Path) -> None:
+    path = tmp_path / "block.stl"
+    path.write_bytes(b"old")
+    block = sf.box(size_x=1, size_y=2, size_z=3)
+    sf.export_stl(block, str(path))
+    data = path.read_bytes()
+    assert struct.unpack_from("<I", data, 80) == (len(sf.mesh(block).triangles),)

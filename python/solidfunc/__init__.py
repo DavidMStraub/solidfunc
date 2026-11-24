@@ -35,7 +35,7 @@ from ._core import (
 )
 from ._frame import Plane, place
 from ._kinds import EdgeKind, FaceKind
-from ._mesh import ExportMesh, Mesh, mesh, tessellate
+from ._mesh import ExportMesh, Mesh, export_stl, mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
 from .planar import (
@@ -86,6 +86,7 @@ __all__ = [
     "difference",
     "edges",
     "export_step",
+    "export_stl",
     "extrude",
     "faces",
     "fillet",
