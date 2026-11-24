@@ -35,7 +35,7 @@ from ._core import (
 )
 from ._frame import Plane, place
 from ._kinds import EdgeKind, FaceKind
-from ._mesh import Mesh, tessellate
+from ._mesh import ExportMesh, Mesh, mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
 from ._topology import chamfer, edges, faces, fillet, vertices
 from .planar import (
@@ -63,6 +63,7 @@ __all__ = [
     "Edge",
     "EdgeKind",
     "EmptyResultError",
+    "ExportMesh",
     "Face",
     "FaceKind",
     "KernelError",
@@ -92,6 +93,7 @@ __all__ = [
     "intersection",
     "line",
     "loft",
+    "mesh",
     "mirror",
     "path",
     "place",

@@ -162,3 +162,9 @@ the SVG with an interactive view once the browser has loaded
 [vtk.js](https://github.com/Kitware/vtk-js) (a pinned version, from
 cdn.jsdelivr.net). Frontends that don't run scripts, or have no internet
 access, show the SVG.
+
+## Mesh export
+
+| Signature | Behavior |
+| --- | --- |
+| `mesh(shape: Shape, /, *, chord_tolerance: float \| None = None, max_edge_length: float \| None = None) -> ExportMesh` | Meshes a shape for export and analysis with SolidCore's mesh path, which is slower than `tessellate`. Faces share their vertices along edges and corners, so every mesh edge is used by exactly two triangles. `ExportMesh.vertices` are XYZ points in millimetres and `ExportMesh.triangles` are vertex index triples, counter-clockwise seen from outside. `chord_tolerance` is a positive target deviation in millimetres, by default 1/5000 of the bounding box diagonal. `max_edge_length` is an optional positive longest triangle side in millimetres. A face that cannot be meshed raises `KernelError`, so a returned mesh is closed; a face left short of the requested triangle shape or chord tolerance is not reported. |
