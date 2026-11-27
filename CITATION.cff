@@ -12,9 +12,9 @@ authors:
     orcid: "https://orcid.org/0000-0001-5762-7339"
     affiliation: "Munich University of Applied Sciences HM"
     country: DE
-version: 0.1.0a5
+version: 0.1.0
 doi: 10.5281/zenodo.24395927
-date-released: "2026-11-20"
+date-released: "2026-11-27"
 license: MIT
 repository-code: "https://github.com/DavidMStraub/solidfunc"
 url: "https://pypi.org/project/solidfunc/"
