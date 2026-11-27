@@ -14,12 +14,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.30.1", features = ["abi3-py311"] }
-solidcore = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
-solidcore-convert = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
-solidcore-ops = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
-solidcore-record = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
-solidcore-step = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
-solidcore-tess = { git = "https://github.com/tangency-labs/solidcore", rev = "cb9bee4bb9f56880c9973a9f8e99c83fdec24ad3" }
+solidcore = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
+solidcore-convert = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
+solidcore-ops = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
+solidcore-record = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
+solidcore-step = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
+solidcore-tess = { git = "https://github.com/tangency-labs/solidcore", rev = "d48d68e4ca37d259a5d6d150f95a53d6df56f4c7" }
 
 [lints.rust]
 unsafe_code = "forbid"
