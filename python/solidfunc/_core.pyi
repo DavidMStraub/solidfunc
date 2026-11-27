@@ -1,8 +1,9 @@
 """Types for the private PyO3 extension."""
 
-from collections.abc import Container
+from collections.abc import Container, Sequence
 from typing import TypeAlias, final
 
+from ._interface import ShapeDict
 from ._kinds import EdgeKind, FaceKind
 
 _Point3D: TypeAlias = tuple[float, float, float]
@@ -18,6 +19,9 @@ class Shape:
     def __add__(self, other: Shape, /) -> Shape: ...
     def __sub__(self, other: Shape, /) -> Shape: ...
     def __and__(self, other: Shape, /) -> Shape: ...
+    def __cad_interface__(
+        self, *, accept: Sequence[str] | None = None
+    ) -> ShapeDict: ...
     def _repr_mimebundle_(
         self,
         include: Container[str] | None = None,

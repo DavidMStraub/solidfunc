@@ -62,6 +62,17 @@ impl Shape {
         ))
     }
 
+    /// The `__cad_interface__` protocol, delegated to `solidfunc._interface`.
+    #[pyo3(signature = (*, accept=None))]
+    fn __cad_interface__<'py>(
+        slf: &Bound<'py, Self>,
+        accept: Option<Bound<'py, PyAny>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        slf.py()
+            .import("solidfunc._interface")?
+            .call_method1("_cad_interface", (slf, accept))
+    }
+
     /// Notebook display, delegated to `solidfunc._display`.
     #[pyo3(signature = (include=None, exclude=None))]
     fn _repr_mimebundle_<'py>(

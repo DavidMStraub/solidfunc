@@ -39,6 +39,7 @@ from ._core import (
     Vertex,
 )
 from ._frame import Plane, place
+from ._interface import import_shape
 from ._kinds import EdgeKind, FaceKind
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
@@ -96,6 +97,7 @@ __all__ = [
     "extrude",
     "faces",
     "fillet",
+    "import_shape",
     "import_step",
     "intersection",
     "line",

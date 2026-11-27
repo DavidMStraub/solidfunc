@@ -146,6 +146,23 @@ at runtime, and a type checker rejects a misspelled comparison such as
 | `centroid(shape: Shape, *, relative_tolerance: float = 1e-9) -> Point3D` | Returns the centroid of the volume, the centre of mass at uniform density. Unlike `bounds(shape).center`, it depends on where the material is. |
 | `import_step(path: str \| PathLike[str], /) -> Shape` | Reads a STEP file and merges all closed solids into one shape, placed in world coordinates. Part identity is not kept. |
 | `export_step(shape: Shape, path: str \| PathLike[str], *, name: str = "Part") -> None` | Writes STEP AP242, using `name` as the part label. Overwrites an existing file. |
+| `import_shape(obj: object, /) -> Shape` | Imports a part or assembly from another CAD library, such as CadQuery or build123d. An assembly becomes one shape with every part at its place; names and colours are not kept. Each call converts the part, so import it once and reuse the result. |
+
+## Exchange with other libraries
+
+solidfunc exchanges shapes with other CAD libraries through the proposed
+[`__cad_interface__`](https://github.com/DavidMStraub/cad-interface)
+protocol, without either side importing the other. Users don't call the
+protocol themselves:
+
+- `import_shape` reads a part from any library that supports the protocol
+  and can provide STEP. It raises `TypeError` for an object whose library
+  doesn't support the protocol, and `ValueError` when the library can't
+  provide STEP.
+- Tools that support the protocol, such as viewers or meshers, accept a
+  solidfunc `Shape` directly. Under the hood they receive the same STEP
+  text that `export_step` writes. SolidCore isn't OpenCASCADE, so STEP is
+  the only format solidfunc can provide.
 
 Invalid argument values can raise `ValueError`. The operators `-` and `&`
 raise `EmptyResultError`, a `ValueError` subclass, when their result would be
