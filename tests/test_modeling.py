@@ -304,3 +304,18 @@ def test_reported_kinds_match_their_literal_types() -> None:
     for shape in shapes:
         assert {face.kind for face in sf.faces(shape)} <= set(get_args(sf.FaceKind))
         assert {edge.kind for edge in sf.edges(shape)} <= set(get_args(sf.EdgeKind))
+
+
+@pytest.mark.parametrize("operation", ["fillet", "chamfer"])
+def test_blending_no_edges_says_so(operation: str) -> None:
+    block = sf.box(size_x=10, size_y=10, size_z=10)
+    size = {"fillet": "radius", "chamfer": "setback"}[operation]
+    with pytest.raises(ValueError, match=f"{operation} needs at least one edge"):
+        getattr(sf, operation)(block, [], **{size: 1})
+
+
+def test_a_fillet_too_large_names_the_largest_that_fits() -> None:
+    block = sf.box(size_x=10, size_y=10, size_z=10)
+    top = max(sf.faces(block), key=lambda face: face.centroid[2])
+    with pytest.raises(sf.KernelError, match="largest .* that fits"):
+        sf.fillet(block, sf.edges(top), radius=6)

@@ -63,6 +63,17 @@ def vertices(scope: Shape | Face | Edge, /) -> tuple[Vertex, ...]:
     return _core._vertices(scope)
 
 
+def _some_edges(operation: str, edges: Iterable[Edge]) -> list[Edge]:
+    selected = list(edges)
+    if not selected:
+        raise ValueError(f"{operation} needs at least one edge; none were given")
+    return selected
+
+
+# The kernel refuses offsets beyond this distance.
+_MAX_THICKNESS = 1e6
+
+
 def fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape:
     """Round the selected edges of a copy using a constant radius.
 
@@ -71,7 +82,7 @@ def fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape:
     The kernel may refuse a radius that does not fit the geometry.
     """
     _positive("radius", radius)
-    return _core._fillet(shape, list(edges), radius)
+    return _core._fillet(shape, _some_edges("fillet", edges), radius)
 
 
 def shell(
@@ -92,6 +103,8 @@ def shell(
     refuse a wall that does not fit the geometry.
     """
     _positive("thickness", thickness)
+    if thickness > _MAX_THICKNESS:
+        raise ValueError(f"thickness must be at most {_MAX_THICKNESS:g} mm")
     if side not in ("inward", "outward"):
         raise ValueError('side must be "inward" or "outward"')
     signed = -thickness if side == "inward" else thickness
@@ -107,4 +120,4 @@ def chamfer(shape: Shape, edges: Iterable[Edge], /, *, setback: float) -> Shape:
     does not fit the geometry.
     """
     _positive("setback", setback)
-    return _core._chamfer(shape, list(edges), setback)
+    return _core._chamfer(shape, _some_edges("chamfer", edges), setback)

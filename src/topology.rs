@@ -10,7 +10,7 @@ use solidcore_ops::blend::{blend_ordered, Blend, BlendOptions, Corners};
 use solidcore_ops::Order;
 use solidcore_record::brep::{Brep, Curve, Loop, Surface};
 
-use crate::{kernel_error, repr_number, repr_point, Shape};
+use crate::{kernel_error, repr_number, repr_point, KernelError, Shape};
 
 type Point = (f64, f64, f64);
 
@@ -287,6 +287,15 @@ impl Vertex {
     }
 }
 
+/// A face, edge, or vertex reference that its own shape no longer contains. Shapes are
+/// immutable, so this means a solidfunc bug, not bad input.
+fn lost_reference() -> solidcore_ops::Error {
+    solidcore_ops::Error::Refused {
+        operation: "topology lookup",
+        reason: "a reference is missing from its own shape; this is a solidfunc bug",
+    }
+}
+
 fn record_index<T: PartialEq>(
     items: &[T],
     original: &[T],
@@ -299,7 +308,7 @@ fn record_index<T: PartialEq>(
     items
         .iter()
         .position(|item| item == id)
-        .ok_or(solidcore_ops::Error::Argument)
+        .ok_or_else(lost_reference)
 }
 
 fn vertex_refs<'py>(
@@ -425,7 +434,7 @@ fn finish_edges(
                     .edges
                     .iter()
                     .position(|edge| edge == id)
-                    .ok_or(solidcore_ops::Error::Argument)
+                    .ok_or_else(lost_reference)
             })
             .collect::<solidcore_ops::Result<Vec<_>>>()?;
         let (body, order) = shape.body.copy_with_order(&order)?;
@@ -497,14 +506,20 @@ fn _shell(
                     .faces
                     .iter()
                     .position(|face| face == id)
-                    .ok_or(solidcore_ops::Error::Argument)
+                    .ok_or_else(lost_reference)
             })
             .collect::<solidcore_ops::Result<Vec<_>>>()?;
         let (body, order) = shape.body.copy_with_order(&order)?;
         solidcore_ops::offset::shell(&body, &order, &indices, thickness)?;
         Ok(Shape { body })
     })
-    .map_err(|error| kernel_error("shell", error))
+    .map_err(|error| match error {
+        solidcore_ops::Error::NoRoom => KernelError::new_err(format!(
+            "shell: a {} mm wall leaves no cavity inside the shape; use a thinner wall",
+            repr_number(thickness.abs())
+        )),
+        error => kernel_error("shell", error),
+    })
 }
 
 pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {

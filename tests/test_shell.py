@@ -59,8 +59,14 @@ def test_faces_must_belong_to_the_shape() -> None:
 
 def test_a_wall_that_does_not_fit_raises() -> None:
     cube, top = _cube_and_top()
-    with pytest.raises(sf.KernelError, match="shell"):
+    with pytest.raises(sf.KernelError, match="11 mm wall .* thinner wall"):
         sf.shell(cube, [top], thickness=11)
+
+
+def test_thickness_beyond_the_kernel_limit() -> None:
+    cube, top = _cube_and_top()
+    with pytest.raises(ValueError, match="at most 1e"):
+        sf.shell(cube, [top], thickness=1e7)
 
 
 @pytest.mark.parametrize("value", [0, -1, math.nan, math.inf])

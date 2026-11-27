@@ -28,7 +28,13 @@ pub(super) fn plane((origin, x, y): Frame) -> Plane {
 fn placed(segments: &[Seg2], plane: &Plane) -> Result<Vec<Curve>> {
     segments
         .iter()
-        .map(|segment| Curve::from_seg2(segment, plane).ok_or(Error::Argument))
+        .map(|segment| {
+            // `arc()` already refuses the zero-sweep arcs the kernel cannot place.
+            Curve::from_seg2(segment, plane).ok_or(Error::Refused {
+                operation: "profile placement",
+                reason: "a profile segment cannot be placed; this is a solidfunc bug",
+            })
+        })
         .collect()
 }
 
