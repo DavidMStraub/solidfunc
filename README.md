@@ -122,9 +122,10 @@ solidfunc borrows many ideas from CadQuery and build123d.
 ### Coverage
 
 solidfunc builds single solids from primitives, extrusions, revolutions,
-lofts, and sweeps, with booleans, placement, fillets and chamfers, face and
-edge queries, and STEP import and export. Assemblies, colours, open sheets
-and shells, and 2D operations on profiles are outside its scope. Releases
+lofts, and sweeps, with booleans, placement, fillets, chamfers, and
+shelling, face and edge queries, volume, area, and centroid, and STEP import
+and export. Assemblies, colours, open sheets and shells, and 2D operations
+on profiles are outside its scope. Releases
 are alphas, and the API can change between them.
 
 ## Development

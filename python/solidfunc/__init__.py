@@ -10,8 +10,11 @@ from . import planar
 from ._api import (
     Bounds,
     Point3D,
+    area,
     bounds,
     box,
+    centroid,
+    cone,
     cylinder,
     difference,
     export_step,
@@ -19,6 +22,8 @@ from ._api import (
     intersection,
     mirror,
     rotate,
+    sphere,
+    torus,
     translate,
     union,
     volume,
@@ -37,7 +42,7 @@ from ._frame import Plane, place
 from ._kinds import EdgeKind, FaceKind
 from ._mesh import Mesh, tessellate
 from ._modeling import loft, polyline3d, revolve, spline3d, sweep
-from ._topology import chamfer, edges, faces, fillet, vertices
+from ._topology import chamfer, edges, faces, fillet, shell, vertices
 from .planar import (
     Boundary,
     Curve2D,
@@ -77,10 +82,13 @@ __all__ = [
     "Vertex",
     "__version__",
     "arc",
+    "area",
     "bounds",
     "box",
+    "centroid",
     "chamfer",
     "circle",
+    "cone",
     "cylinder",
     "difference",
     "edges",
@@ -103,9 +111,12 @@ __all__ = [
     "rectangle",
     "revolve",
     "rotate",
+    "shell",
+    "sphere",
     "spline3d",
     "sweep",
     "tessellate",
+    "torus",
     "translate",
     "union",
     "vertices",

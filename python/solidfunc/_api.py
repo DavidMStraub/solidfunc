@@ -48,15 +48,26 @@ def box(*, size_x: float, size_y: float, size_z: float) -> Shape:
     return _core._box((-size_x / 2, -size_y / 2, 0.0), (size_x, size_y, size_z))
 
 
-def _radius(radius: float | None, diameter: float | None) -> float:
+def _radius(
+    radius: float | None,
+    diameter: float | None,
+    *,
+    prefix: str = "",
+    allow_zero: bool = False,
+) -> float:
+    radius_name, diameter_name = f"{prefix}radius", f"{prefix}diameter"
     if (radius is None) == (diameter is None):
-        raise ValueError("supply exactly one of radius and diameter")
-    if radius is None:
-        assert diameter is not None
-        _positive("diameter", diameter)
-        return diameter / 2
-    _positive("radius", radius)
-    return radius
+        raise ValueError(f"supply exactly one of {radius_name} and {diameter_name}")
+    name, value = (
+        (radius_name, radius) if radius is not None else (diameter_name, diameter)
+    )
+    assert value is not None
+    if allow_zero:
+        if not isfinite(value) or value < 0:
+            raise ValueError(f"{name} must be finite and at least zero")
+    else:
+        _positive(name, value)
+    return value if radius is not None else value / 2
 
 
 @overload
@@ -76,6 +87,66 @@ def cylinder(
     size = _radius(radius, diameter)
     _positive("height", height)
     return _core._cylinder((0.0, 0.0, 0.0), size, height)
+
+
+@overload
+def sphere(*, radius: float) -> Shape: ...
+@overload
+def sphere(*, diameter: float) -> Shape: ...
+def sphere(*, radius: float | None = None, diameter: float | None = None) -> Shape:
+    """Construct a sphere on the Z axis resting on z = 0.
+
+    Give exactly one of ``radius`` or ``diameter``, positive and finite, in
+    millimetres. Like the other primitives, the sphere is centred in X and Y
+    with its base at z = 0, so its centre is at z = ``radius``. Place it with
+    ``translate`` or ``place``.
+    """
+    size = _radius(radius, diameter)
+    return _core._sphere((0.0, 0.0, size), size)
+
+
+@overload
+def cone(*, base_radius: float, top_radius: float, height: float) -> Shape: ...
+@overload
+def cone(*, base_diameter: float, top_diameter: float, height: float) -> Shape: ...
+def cone(
+    *,
+    base_radius: float | None = None,
+    base_diameter: float | None = None,
+    top_radius: float | None = None,
+    top_diameter: float | None = None,
+    height: float,
+) -> Shape:
+    """Construct a cone or frustum on the Z axis with its base centre at the origin.
+
+    Give the base as exactly one of ``base_radius`` or ``base_diameter``, and
+    the top as exactly one of ``top_radius`` or ``top_diameter``, in
+    millimetres. The base is positive. The top is zero for a pointed cone and
+    may be larger than the base, but not equal to it; use ``cylinder`` for
+    that. The cone rises from z = 0 to ``height``.
+    """
+    base = _radius(base_radius, base_diameter, prefix="base_")
+    top = _radius(top_radius, top_diameter, prefix="top_", allow_zero=True)
+    _positive("height", height)
+    if top == base:
+        raise ValueError("top and base are equal; use cylinder() instead")
+    return _core._cone((0.0, 0.0, 0.0), base, top, height)
+
+
+def torus(*, major_radius: float, minor_radius: float) -> Shape:
+    """Construct a ring torus around the Z axis resting on z = 0.
+
+    ``major_radius`` is the distance from the Z axis to the centre of the
+    tube, and ``minor_radius`` the tube's radius, in millimetres. Both are
+    positive and finite, and the minor radius is smaller than the major one.
+    The torus is centred in X and Y and rises from z = 0 to
+    ``2 * minor_radius``.
+    """
+    _positive("major_radius", major_radius)
+    _positive("minor_radius", minor_radius)
+    if minor_radius >= major_radius:
+        raise ValueError("minor_radius must be smaller than major_radius")
+    return _core._torus((0.0, 0.0, minor_radius), major_radius, minor_radius)
 
 
 def union(shape: Shape, /, *shapes: Shape) -> Shape:
@@ -118,6 +189,29 @@ def volume(shape: Shape, *, relative_tolerance: float = 1e-9) -> float:
     """
     _positive("relative_tolerance", relative_tolerance)
     return _core._volume(shape, relative_tolerance)
+
+
+def area(shape: Shape, *, relative_tolerance: float = 1e-9) -> float:
+    """Return the surface area of ``shape`` in square millimetres.
+
+    The area of every face is counted once. ``relative_tolerance`` is a
+    positive, finite, dimensionless tolerance requested for the kernel's
+    integration.
+    """
+    _positive("relative_tolerance", relative_tolerance)
+    return _core._area(shape, relative_tolerance)
+
+
+def centroid(shape: Shape, *, relative_tolerance: float = 1e-9) -> Point3D:
+    """Return the centroid of the volume of ``shape`` in world millimetres.
+
+    This is the centre of mass at uniform density. ``relative_tolerance``
+    is a positive, finite, dimensionless tolerance requested for the
+    kernel's integration.
+    """
+    _positive("relative_tolerance", relative_tolerance)
+    x, y, z = _core._centroid(shape, relative_tolerance)
+    return x, y, z
 
 
 def translate(shape: Shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> Shape:

@@ -71,6 +71,9 @@ knot parameter.
 | --- | --- |
 | `box(*, size_x: float, size_y: float, size_z: float) -> Shape` | Box with positive sizes, centred in X and Y, rising from z = 0 to `size_z`. |
 | `cylinder(*, radius: float \| diameter: float, height: float) -> Shape` | Cylinder on the Z axis, rising from z = 0 to `height`. Give exactly one of `radius` or `diameter`. |
+| `sphere(*, radius: float \| diameter: float) -> Shape` | Sphere on the Z axis resting on z = 0, so its centre is at z = `radius`. Give exactly one of `radius` or `diameter`. |
+| `cone(*, base_radius: float \| base_diameter: float, top_radius: float \| top_diameter: float, height: float) -> Shape` | Cone or frustum on the Z axis, rising from z = 0 to `height`. The base is positive; the top is zero for a pointed cone, may be larger than the base, and may not equal it. Give one of radius or diameter for each end. |
+| `torus(*, major_radius: float, minor_radius: float) -> Shape` | Ring torus around the Z axis resting on z = 0. `major_radius` reaches the centre of the tube and is larger than the tube's `minor_radius`. |
 | `extrude(profile: Profile, *, distance: float, plane: Plane = Plane()) -> Shape` | Extrudes by a finite, nonzero signed distance normal to the placement plane. Defaults to world XY. |
 | `revolve(profile: Profile, *, axis_direction: Point3D, axis_origin: Point3D = (0.0, 0.0, 0.0), angle_deg: float = 360.0, plane: Plane = Plane()) -> Shape` | Revolves a single-boundary profile around an axis in its placement plane. Angle is greater than zero and at most 360 degrees. |
 | `loft(sections: Iterable[tuple[Profile, Plane]] \| Iterable[Path3D], /, *, degree: int = 1) -> Shape` | Caps a solid through placed profiles or through closed spatial paths with corresponding curves. Sections must be planar and without holes. `degree` is the polynomial degree in the direction through the sections. |
@@ -131,6 +134,7 @@ at runtime, and a type checker rejects a misspelled comparison such as
 | `vertices(scope: Shape \| Face \| Edge, /) -> tuple[Vertex, ...]` | Returns unique topological vertices, including vertices on face holes. |
 | `fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape` | Rounds selected edges on a copy. The references must come from this exact shape. |
 | `chamfer(shape: Shape, edges: Iterable[Edge], /, *, setback: float) -> Shape` | Bevels selected edges on a copy with equal setbacks along the adjacent faces. The references must come from this exact shape. |
+| `shell(shape: Shape, open_faces: Iterable[Face], /, *, thickness: float, side: Literal["inward", "outward"] = "inward") -> Shape` | Hollows a copy into a wall of constant positive `thickness`, removing `open_faces`. With no open faces the result is closed around an inner void. `"inward"` keeps the outer size; `"outward"` grows the shape, with sharp corners on a box. The references must come from this exact shape. |
 
 ## Measurement and STEP exchange
 
@@ -138,6 +142,8 @@ at runtime, and a type checker rejects a misspelled comparison such as
 | --- | --- |
 | `bounds(shape: Shape) -> Bounds` | Returns the world-axis-aligned bounding box. |
 | `volume(shape: Shape, *, relative_tolerance: float = 1e-9) -> float` | Returns enclosed volume. The requested relative integration tolerance is positive and dimensionless. |
+| `area(shape: Shape, *, relative_tolerance: float = 1e-9) -> float` | Returns the surface area in square millimetres, every face counted once. |
+| `centroid(shape: Shape, *, relative_tolerance: float = 1e-9) -> Point3D` | Returns the centroid of the volume, the centre of mass at uniform density. Unlike `bounds(shape).center`, it depends on where the material is. |
 | `import_step(path: str \| PathLike[str], /) -> Shape` | Reads a STEP file and merges all closed solids into one shape, placed in world coordinates. Part identity is not kept. |
 | `export_step(shape: Shape, path: str \| PathLike[str], *, name: str = "Part") -> None` | Writes STEP AP242, using `name` as the part label. Overwrites an existing file. |
 

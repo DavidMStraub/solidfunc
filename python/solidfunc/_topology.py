@@ -1,6 +1,7 @@
 """Inspect a shape and apply finishing operations to its topology."""
 
 from collections.abc import Iterable
+from typing import Literal
 
 from . import _core
 from ._api import _positive
@@ -71,6 +72,30 @@ def fillet(shape: Shape, edges: Iterable[Edge], /, *, radius: float) -> Shape:
     """
     _positive("radius", radius)
     return _core._fillet(shape, list(edges), radius)
+
+
+def shell(
+    shape: Shape,
+    open_faces: Iterable[Face],
+    /,
+    *,
+    thickness: float,
+    side: Literal["inward", "outward"] = "inward",
+) -> Shape:
+    """Hollow a copy of ``shape`` into a wall of constant thickness.
+
+    ``open_faces`` are removed to open the shell, and must be references
+    from this exact ``shape``; with none, the result is closed around an
+    inner void. ``thickness`` is positive, finite, and in millimetres.
+    ``side`` puts the wall inside the original surfaces (``"inward"``,
+    keeping the outer size) or outside them (``"outward"``). The kernel may
+    refuse a wall that does not fit the geometry.
+    """
+    _positive("thickness", thickness)
+    if side not in ("inward", "outward"):
+        raise ValueError('side must be "inward" or "outward"')
+    signed = -thickness if side == "inward" else thickness
+    return _core._shell(shape, list(open_faces), signed)
 
 
 def chamfer(shape: Shape, edges: Iterable[Edge], /, *, setback: float) -> Shape:

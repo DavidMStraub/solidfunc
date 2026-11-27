@@ -123,6 +123,38 @@ fn _cylinder(py: Python<'_>, origin: [f64; 3], radius: f64, height: f64) -> PyRe
         .map_err(|error| kernel_error("cylinder", error))
 }
 
+#[pyfunction]
+fn _sphere(py: Python<'_>, center: [f64; 3], radius: f64) -> PyResult<Shape> {
+    py.detach(|| solidcore_ops::make_sphere(center, radius))
+        .map(|body| Shape { body })
+        .map_err(|error| kernel_error("sphere", error))
+}
+
+#[pyfunction]
+fn _cone(
+    py: Python<'_>,
+    origin: [f64; 3],
+    base_radius: f64,
+    top_radius: f64,
+    height: f64,
+) -> PyResult<Shape> {
+    py.detach(|| solidcore_ops::make_cone(origin, base_radius, top_radius, height))
+        .map(|body| Shape { body })
+        .map_err(|error| kernel_error("cone", error))
+}
+
+#[pyfunction]
+fn _torus(
+    py: Python<'_>,
+    center: [f64; 3],
+    major_radius: f64,
+    minor_radius: f64,
+) -> PyResult<Shape> {
+    py.detach(|| solidcore_ops::make_torus(center, major_radius, minor_radius))
+        .map(|body| Shape { body })
+        .map_err(|error| kernel_error("torus", error))
+}
+
 fn boolean_result(
     py: Python<'_>,
     left: &Shape,
@@ -175,6 +207,20 @@ fn _difference(py: Python<'_>, left: &Shape, right: &Shape) -> PyResult<Option<S
 fn _volume(py: Python<'_>, shape: &Shape, relative_accuracy: f64) -> PyResult<f64> {
     py.detach(|| shape.body.volume(relative_accuracy))
         .map_err(|error| kernel_error("volume", error))
+}
+
+#[pyfunction]
+fn _area(py: Python<'_>, shape: &Shape, relative_accuracy: f64) -> PyResult<f64> {
+    py.detach(|| shape.body.area(relative_accuracy))
+        .map_err(|error| kernel_error("area", error))
+}
+
+/// The centre of the shape's volume (its centre of mass at uniform density).
+#[pyfunction]
+fn _centroid(py: Python<'_>, shape: &Shape, relative_accuracy: f64) -> PyResult<[f64; 3]> {
+    py.detach(|| shape.body.mass_properties(relative_accuracy))
+        .map(|estimate| estimate.centroid)
+        .map_err(|error| kernel_error("centroid", error))
 }
 
 fn transformed(shape: &Shape, matrix: &affine::Matrix) -> Result<Shape> {
@@ -254,6 +300,11 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     )?;
     module.add_function(wrap_pyfunction!(_box, module)?)?;
     module.add_function(wrap_pyfunction!(_cylinder, module)?)?;
+    module.add_function(wrap_pyfunction!(_sphere, module)?)?;
+    module.add_function(wrap_pyfunction!(_cone, module)?)?;
+    module.add_function(wrap_pyfunction!(_torus, module)?)?;
+    module.add_function(wrap_pyfunction!(_area, module)?)?;
+    module.add_function(wrap_pyfunction!(_centroid, module)?)?;
     module.add_function(wrap_pyfunction!(_union, module)?)?;
     module.add_function(wrap_pyfunction!(_union_all, module)?)?;
     module.add_function(wrap_pyfunction!(_place, module)?)?;

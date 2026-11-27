@@ -464,7 +464,51 @@ fn _chamfer(
     finish_edges(py, shape, edges, distance, Blend::Chamfer, "chamfer")
 }
 
+/// Hollow a copy of `shape`: open the given faces and offset the rest into a wall of
+/// `thickness` (negative: inward). No open faces gives a closed body with an inner void.
+#[pyfunction]
+fn _shell(
+    py: Python<'_>,
+    shape: Py<Shape>,
+    open_faces: Vec<PyRef<'_, Face>>,
+    thickness: f64,
+) -> PyResult<Shape> {
+    if open_faces
+        .iter()
+        .any(|face| !face.owner.bind(py).is(shape.bind(py)))
+    {
+        return Err(PyValueError::new_err(
+            "shell faces must belong to the supplied shape",
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    let ids: Vec<_> = open_faces
+        .iter()
+        .map(|face| face.order.faces[face.index])
+        .filter(|id| seen.insert(*id))
+        .collect();
+    let shape = shape.get();
+    py.detach(|| {
+        let (_, order) = shape.body.to_record()?;
+        let indices = ids
+            .iter()
+            .map(|id| {
+                order
+                    .faces
+                    .iter()
+                    .position(|face| face == id)
+                    .ok_or(solidcore_ops::Error::Argument)
+            })
+            .collect::<solidcore_ops::Result<Vec<_>>>()?;
+        let (body, order) = shape.body.copy_with_order(&order)?;
+        solidcore_ops::offset::shell(&body, &order, &indices, thickness)?;
+        Ok(Shape { body })
+    })
+    .map_err(|error| kernel_error("shell", error))
+}
+
 pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(_shell, module)?)?;
     module.add_class::<Edge>()?;
     module.add_class::<Face>()?;
     module.add_class::<Vertex>()?;
